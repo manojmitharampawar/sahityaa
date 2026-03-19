@@ -22,6 +22,8 @@ export interface ReadingProgress {
   scriptureId: string;
   language: string;
   lastPageSlug: string;
+  currentPage: number;
+  totalPages: number;
   scrollPercent: number;
   percentComplete: number;
   lastReadAt: number;

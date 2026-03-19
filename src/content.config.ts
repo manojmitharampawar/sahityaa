@@ -11,7 +11,7 @@ const texts = defineCollection({
     category: z.enum([
       'vedas', 'upanishads', 'puranas', 'epics', 'stotras',
       'gitas', 'smritis', 'tantras', 'agamas', 'sutras',
-      'aartis', 'abhangas', 'dohas', 'sant-sahitya',
+      'aartis', 'abhangas', 'dohas', 'niti', 'sant-sahitya',
     ]),
     subcategory: z.string().optional(),
     author: z.string(),

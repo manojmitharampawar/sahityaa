@@ -26,3 +26,23 @@ const { title, description } = Astro.props;
     min-height: calc(100vh - 10rem);
   }
 </style>
+
+<script>
+  // Redirect TextCard links to user's preferred language
+  document.addEventListener('click', (e) => {
+    const card = (e.target as Element)?.closest('.text-card[data-lang-urls]') as HTMLAnchorElement | null;
+    if (!card) return;
+
+    const prefLang = localStorage.getItem('sahityaa_pref_lang');
+    if (!prefLang) return;
+
+    try {
+      const langUrls: Record<string, string> = JSON.parse(card.dataset.langUrls || '{}');
+      if (langUrls[prefLang]) {
+        e.preventDefault();
+        const base = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/sahityaa/';
+        window.location.href = `${base}read/${langUrls[prefLang]}/`;
+      }
+    } catch { /* ignore parse errors */ }
+  });
+</script>

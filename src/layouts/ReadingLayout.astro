@@ -1,5 +1,11 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { LANGUAGE_NATIVE_NAMES } from '../utils/content-helpers';
+
+interface LanguageVersion {
+  id: string;
+  language: string;
+}
 
 interface Props {
   title: string;
@@ -9,9 +15,12 @@ interface Props {
   scriptureTitleLatin?: string;
   ogType?: string;
   jsonLd?: Record<string, unknown>;
+  languageVersions?: LanguageVersion[];
+  currentLanguage?: string;
 }
 
-const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, ogType, jsonLd } = Astro.props;
+const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, ogType, jsonLd, languageVersions = [], currentLanguage = 'sa' } = Astro.props;
+const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout title={title} description={description} lang={lang} ogType={ogType} jsonLd={jsonLd}>
@@ -22,6 +31,10 @@ const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, og
     </a>
     {scriptureTitleLatin && <span class="toolbar-scripture-name">{scriptureTitleLatin}</span>}
     <div class="toolbar-actions">
+      <!-- TOC Button -->
+      <button class="toolbar-btn toc-btn" id="toc-toggle" title="Table of Contents" aria-label="Table of Contents">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <button class="toolbar-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       </button>
@@ -39,7 +52,42 @@ const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, og
       <button class="toolbar-btn" id="add-to-list-btn" title="Add to reading list" aria-label="Add to reading list">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       </button>
+      {/* Language Switcher */}
+      {languageVersions.length > 1 && (
+        <div class="lang-switcher-wrap">
+          <button class="toolbar-btn lang-toggle-btn" id="lang-toggle" title="Switch language" aria-label="Switch language">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span class="lang-current-label">{LANGUAGE_NATIVE_NAMES[currentLanguage] || currentLanguage}</span>
+          </button>
+          <div class="lang-dropdown" id="lang-dropdown">
+            {languageVersions.map(v => (
+              <a
+                href={`${base}read/${v.id}/`}
+                class={`lang-dropdown-item ${v.language === currentLanguage ? 'active' : ''}`}
+                data-lang={v.language}
+                data-astro-reload
+              >
+                <span class="lang-native">{LANGUAGE_NATIVE_NAMES[v.language] || v.language}</span>
+              </a>
+            ))}
+            <div class="lang-dropdown-divider"></div>
+            <button class="lang-dropdown-item lang-set-default" id="lang-set-default" data-lang={currentLanguage}>
+              ✦ Set {LANGUAGE_NATIVE_NAMES[currentLanguage]} as default
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  </div>
+
+  <!-- TOC Drawer -->
+  <div class="toc-drawer-overlay" id="toc-overlay"></div>
+  <div class="toc-drawer" id="toc-drawer">
+    <div class="toc-drawer-header">
+      <h3>Contents</h3>
+      <button class="toc-drawer-close" id="toc-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="toc-drawer-list" id="toc-list"></div>
   </div>
 
   <!-- Add to Reading List Modal -->
@@ -63,13 +111,45 @@ const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, og
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <main class="reading-main">
-    <slot />
+    <!-- Hidden content source — parsed by BookReader -->
+    <div class="reading-content-source" id="content-source" style="display:none;">
+      <slot />
+    </div>
+
+    <!-- Visible book display -->
+    <div class="book-container">
+      <div class="book-page-display reading-content" id="book-display" lang={lang}>
+        <div class="page-corner-tl"></div>
+        <div class="page-corner-br"></div>
+      </div>
+    </div>
+
+    <!-- Page Navigation -->
+    <nav class="page-nav-controls" id="page-nav" aria-label="Page navigation">
+      <button class="page-nav-btn" id="prev-page" aria-label="Previous page">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span class="nav-label">Prev</span>
+      </button>
+      <span class="page-indicator" id="page-indicator">Page 1 / 1</span>
+      <button class="page-nav-btn" id="next-page" aria-label="Next page">
+        <span class="nav-label">Next</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </nav>
+
+    <!-- Page Dots -->
+    <div class="page-dots" id="page-dots"></div>
   </main>
 
-  <div class="reading-progress">
-    <div class="reading-progress-bar" id="progress-bar" style="width: 0%"></div>
+  <!-- Progress bar -->
+  <div class="reading-progress-pages">
+    <div class="bar" id="progress-bar" style="width: 0%"></div>
   </div>
 </BaseLayout>
+
+<style is:global>
+  @import '../styles/book-flip.css';
+</style>
 
 <style>
   @import '../styles/reading.css';
@@ -199,11 +279,24 @@ const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, og
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
+  /* Hide content source */
+  .reading-content-source {
+    display: none !important;
+  }
+
+  /* Nav label hidden on very small screens */
+  @media (max-width: 400px) {
+    .nav-label {
+      display: none;
+    }
+  }
 </style>
 
 <script>
   import { prefs, favorites, readLater, bookmarks, progress, readingLists } from '../scripts/storage';
   import type { ThemeMode, FontSize } from '../scripts/storage';
+  import { BookReader } from '../scripts/book-reader';
 
   // ─── Toast helper ───
   function showToast(msg: string) {
@@ -295,68 +388,245 @@ const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, og
     setSvgFill(bookmarkBtn, !!existing);
   }
   bookmarkBtn?.addEventListener('click', async () => {
-    const scrollPercent = window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight) * 100;
+    const currentPageNum = reader?.getCurrentPage() || 0;
+    const totalPagesNum = reader?.getTotalPages() || 1;
+    const pct = totalPagesNum > 1 ? (currentPageNum / (totalPagesNum - 1)) * 100 : 0;
+
     const isNowBookmarked = await bookmarks.toggleForPage(pageSlug, {
       scriptureId,
       language: pageLang,
-      scrollPercent,
-      note: '',
+      scrollPercent: pct,
+      note: `Page ${currentPageNum + 1}`,
       title: document.title,
     });
     setSvgFill(bookmarkBtn, isNowBookmarked);
-    showToast(isNowBookmarked ? 'Page bookmarked' : 'Bookmark removed');
+    showToast(isNowBookmarked ? `Bookmarked page ${currentPageNum + 1}` : 'Bookmark removed');
   });
   initBookmark();
 
-  // ─── Reading Progress (IndexedDB, debounced) ───
-  let progressTimer: ReturnType<typeof setTimeout>;
-  function getScrollPercent(): number {
-    const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    return docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-  }
-  function updateProgressBar() {
-    const pct = getScrollPercent();
-    const bar = document.getElementById('progress-bar');
-    if (bar) bar.style.width = `${Math.min(100, pct)}%`;
-  }
-  async function saveProgress() {
-    if (!scriptureId) return;
-    const pct = getScrollPercent();
-    await progress.save({
-      scriptureId,
-      language: pageLang,
-      lastPageSlug: pageSlug,
-      scrollPercent: pct,
-      percentComplete: Math.round(pct),
-      lastReadAt: Date.now(),
-    });
-  }
-  window.addEventListener('scroll', () => {
-    updateProgressBar();
-    clearTimeout(progressTimer);
-    progressTimer = setTimeout(saveProgress, 1500);
-  }, { passive: true });
-  updateProgressBar();
-  // Save initial progress on page load
-  setTimeout(saveProgress, 2000);
+  // ─── Book Reader Initialization ───
+  let reader: BookReader | null = null;
 
-  // ─── Resume reading (restore scroll position) ───
-  async function tryResumeReading() {
-    if (!scriptureId) return;
-    const saved = await progress.get(scriptureId, pageLang);
-    if (saved && saved.lastPageSlug === pageSlug && saved.scrollPercent > 5) {
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const targetScroll = (saved.scrollPercent / 100) * docHeight;
-      // Only restore if user hasn't already scrolled
-      if (window.scrollY < 10) {
-        window.scrollTo({ top: targetScroll, behavior: 'smooth' });
-        showToast('Resumed where you left off');
-      }
+  const prevBtn = document.getElementById('prev-page') as HTMLButtonElement;
+  const nextBtn = document.getElementById('next-page') as HTMLButtonElement;
+  const pageIndicator = document.getElementById('page-indicator');
+  const progressBar = document.getElementById('progress-bar');
+  const pageDots = document.getElementById('page-dots');
+
+  function updatePageUI(page: number, total: number) {
+    // Update indicator text
+    if (pageIndicator) {
+      pageIndicator.textContent = `Page ${page + 1} / ${total}`;
+    }
+
+    // Update progress bar
+    if (progressBar) {
+      const pct = total > 1 ? ((page + 1) / total) * 100 : 100;
+      progressBar.style.width = `${pct}%`;
+    }
+
+    // Update button states
+    if (prevBtn) prevBtn.disabled = page === 0;
+    if (nextBtn) nextBtn.disabled = page >= total - 1;
+
+    // Update dots
+    if (pageDots) {
+      const dots = pageDots.querySelectorAll('.page-dot');
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === page);
+      });
+    }
+
+    // Update TOC active item
+    const tocItems = document.querySelectorAll<HTMLElement>('.toc-drawer-item');
+    tocItems.forEach(item => {
+      const itemPage = parseInt(item.dataset.page || '-1');
+      item.classList.toggle('active', itemPage === page);
+    });
+
+    // Save progress (debounced)
+    debouncedSaveProgress(page, total);
+  }
+
+  // ─── Build page dots ───
+  function buildPageDots(total: number) {
+    if (!pageDots) return;
+    if (total > 50) {
+      pageDots.classList.add('too-many');
+      return;
+    }
+    pageDots.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('button');
+      dot.className = 'page-dot' + (i === 0 ? ' active' : '');
+      dot.title = `Page ${i + 1}`;
+      dot.setAttribute('aria-label', `Go to page ${i + 1}`);
+      dot.addEventListener('click', () => reader?.goToPage(i));
+      pageDots.appendChild(dot);
     }
   }
-  // Delay resume to allow page to fully render
-  setTimeout(tryResumeReading, 500);
+
+  // ─── Build TOC ───
+  function buildTOC() {
+    if (!reader) return;
+    const tocList = document.getElementById('toc-list');
+    if (!tocList) return;
+
+    const toc = reader.getTableOfContents();
+    if (toc.length === 0) {
+      tocList.innerHTML = '<p style="padding:1em;color:var(--color-text-muted);font-size:0.9rem;">No sections found</p>';
+      return;
+    }
+
+    tocList.innerHTML = '';
+    for (const item of toc) {
+      const btn = document.createElement('button');
+      btn.className = 'toc-drawer-item';
+      btn.dataset.page = String(item.index);
+
+      // Page number badge
+      const badge = document.createElement('span');
+      badge.className = 'toc-page-num';
+      badge.textContent = String(item.index + 1);
+
+      // Heading text
+      const heading = document.createElement('span');
+      heading.className = 'toc-heading-text';
+      heading.textContent = item.heading;
+
+      btn.appendChild(badge);
+      btn.appendChild(heading);
+
+      btn.addEventListener('click', () => {
+        reader?.goToPage(item.index);
+        closeTOC();
+      });
+      tocList.appendChild(btn);
+    }
+  }
+
+  // ─── TOC Drawer ───
+  const tocToggle = document.getElementById('toc-toggle');
+  const tocDrawer = document.getElementById('toc-drawer');
+  const tocOverlay = document.getElementById('toc-overlay');
+  const tocClose = document.getElementById('toc-close');
+
+  function openTOC() {
+    tocDrawer?.classList.add('open');
+    tocOverlay?.classList.add('open');
+  }
+
+  function closeTOC() {
+    tocDrawer?.classList.remove('open');
+    tocOverlay?.classList.remove('open');
+  }
+
+  tocToggle?.addEventListener('click', openTOC);
+  tocClose?.addEventListener('click', closeTOC);
+  tocOverlay?.addEventListener('click', closeTOC);
+
+  // ─── Language Switcher Dropdown ───
+  const langToggle = document.getElementById('lang-toggle');
+  const langDropdown = document.getElementById('lang-dropdown');
+  const langSetDefault = document.getElementById('lang-set-default');
+
+  langToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    langDropdown?.classList.toggle('open');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (langDropdown?.classList.contains('open') && !(e.target as Element)?.closest('.lang-switcher-wrap')) {
+      langDropdown.classList.remove('open');
+    }
+  });
+
+  // Set as default language
+  langSetDefault?.addEventListener('click', () => {
+    const lang = langSetDefault.dataset.lang;
+    if (lang) {
+      localStorage.setItem('sahityaa_pref_lang', lang);
+      langDropdown?.classList.remove('open');
+      // Show brief confirmation
+      const label = langSetDefault.textContent;
+      langSetDefault.textContent = '✓ Saved!';
+      setTimeout(() => { langSetDefault.textContent = label; }, 1500);
+    }
+  });
+
+  // ─── Page nav buttons ───
+  prevBtn?.addEventListener('click', () => reader?.prevPage());
+  nextBtn?.addEventListener('click', () => reader?.nextPage());
+
+  // ─── Reading Progress (IndexedDB, debounced) ───
+  let progressTimer: ReturnType<typeof setTimeout>;
+  function debouncedSaveProgress(page: number, total: number) {
+    clearTimeout(progressTimer);
+    progressTimer = setTimeout(async () => {
+      if (!scriptureId) return;
+      const pct = total > 1 ? Math.round(((page + 1) / total) * 100) : 100;
+      await progress.save({
+        scriptureId,
+        language: pageLang,
+        lastPageSlug: pageSlug,
+        currentPage: page,
+        totalPages: total,
+        scrollPercent: pct,
+        percentComplete: pct,
+        lastReadAt: Date.now(),
+      });
+    }, 1500);
+  }
+
+  // ─── Resume reading (page-based) ───
+  async function tryResumeReading(): Promise<number> {
+    if (!scriptureId) return 0;
+    const saved = await progress.get(scriptureId, pageLang);
+    if (saved && saved.lastPageSlug === pageSlug && saved.currentPage > 0) {
+      return saved.currentPage;
+    }
+    return 0;
+  }
+
+  // ─── Initialize everything ───
+  async function initBookReader() {
+    reader = new BookReader({
+      contentSelector: '#content-source .reading-content',
+      pageSelector: '#book-display',
+      shlokasPerPage: 5,
+      onPageChange: updatePageUI,
+    });
+
+    const ok = reader.init();
+    if (!ok) {
+      // Fallback: show content directly if pagination fails
+      const source = document.getElementById('content-source');
+      const display = document.getElementById('book-display');
+      if (source && display) {
+        display.innerHTML = source.innerHTML;
+        source.remove();
+      }
+      // Hide page controls
+      document.getElementById('page-nav')?.remove();
+      pageDots?.remove();
+      return;
+    }
+
+    // Build dots and TOC
+    buildPageDots(reader.getTotalPages());
+    buildTOC();
+
+    // Resume from saved page
+    const resumePage = await tryResumeReading();
+    if (resumePage > 0 && resumePage < reader.getTotalPages()) {
+      reader.goToPage(resumePage);
+      showToast(`Resumed at page ${resumePage + 1}`);
+    }
+  }
+
+  // Start
+  initBookReader();
 
   // ─── Add to Reading List modal ───
   const addToListBtn = document.getElementById('add-to-list-btn');
@@ -384,7 +654,6 @@ const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, og
       </label>
     `).join('');
 
-    // Handle checkbox changes
     listModalLists.querySelectorAll('input[type="checkbox"]').forEach(cb => {
       cb.addEventListener('change', async (e) => {
         const input = e.target as HTMLInputElement;

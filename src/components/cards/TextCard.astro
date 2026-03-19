@@ -11,9 +11,12 @@ interface Props {
   languages: string[];
   description?: string;
   panth: string;
+  hasChapters?: boolean;
+  totalChapters?: number;
+  langUrls?: Record<string, string>;
 }
 
-const { id, firstTextId, titleLatin, titles, category, author, languages, description, panth } = Astro.props;
+const { id, firstTextId, titleLatin, titles, category, author, languages, description, panth, hasChapters, totalChapters, langUrls = {} } = Astro.props;
 const base = import.meta.env.BASE_URL;
 
 // Get the first available native title
@@ -21,7 +24,7 @@ const nativeTitle = titles['sa'] || titles['hi'] || Object.values(titles)[0] || 
 const readUrl = `${base}read/${firstTextId}/`;
 ---
 
-<a href={readUrl} class="text-card" data-scripture-id={id}>
+<a href={readUrl} class="text-card" data-scripture-id={id} data-lang-urls={JSON.stringify(langUrls)}>
   <div class="card-top-row">
     <div class="card-category-badge">{category}</div>
     <div class="card-languages">

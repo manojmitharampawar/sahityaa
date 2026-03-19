@@ -105,11 +105,19 @@
     "order": 13
   },
   {
+    "id": "niti",
+    "name": "नीति",
+    "nameLatin": "Niti",
+    "namesByLanguage": { "hi": "नीति", "sa": "नीतिः", "en": "Niti (Ethics)" },
+    "description": "Texts on statecraft, ethics, and practical wisdom — including Chanakya Niti and Vidura Niti.",
+    "order": 14
+  },
+  {
     "id": "sant-sahitya",
     "name": "संत साहित्य",
     "nameLatin": "Sant Sahitya",
     "namesByLanguage": { "hi": "संत साहित्य", "mr": "संत साहित्य", "en": "Sant Literature" },
     "description": "Literature of the Bhakti movement saints of Maharashtra, including the teachings and compositions of the Varkari and other traditions.",
-    "order": 14
+    "order": 15
   }
 ]

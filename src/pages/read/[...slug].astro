@@ -52,6 +52,8 @@ const nextChapter = currentChapterIdx < chapters.length - 1 ? chapters[currentCh
   scriptureTitleLatin={data.titleLatin.split(' - ')[0]}
   ogType="article"
   jsonLd={jsonLd}
+  languageVersions={languageVersions.map(v => ({ id: v.id, language: v.data.language }))}
+  currentLanguage={data.language}
 >
   <article class="book-page" data-scripture-id={data.scripture}>
     <header class="scripture-header">
