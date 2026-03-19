@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://example.github.io',
+  site: 'https://manojmitharampawar.github.io',
   base: '/sahityaa/',
   output: 'static',
   build: {
