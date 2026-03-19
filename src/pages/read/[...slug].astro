@@ -1,0 +1,144 @@
+---
+import { getCollection, render } from 'astro:content';
+import ReadingLayout from '../../layouts/ReadingLayout.astro';
+import { LANGUAGE_NAMES, getTextsByScripture, getChapters } from '../../utils/content-helpers';
+
+export async function getStaticPaths() {
+  const texts = await getCollection('texts');
+  return texts.map(text => ({
+    params: { slug: text.id },
+    props: { text },
+  }));
+}
+
+const { text } = Astro.props;
+const { Content } = await render(text);
+const data = text.data;
+const base = import.meta.env.BASE_URL;
+
+// JSON-LD structured data for this scripture
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": data.titleLatin,
+  "alternateName": data.title,
+  "inLanguage": data.language,
+  "genre": data.category,
+  "author": { "@type": "Person", "name": data.author },
+  "isPartOf": { "@type": "BookSeries", "name": data.scripture },
+};
+
+// Get other languages for this scripture
+const allVersions = await getTextsByScripture(data.scripture);
+const languageVersions = allVersions.filter(t =>
+  t.data.chapterNumber === data.chapterNumber || (!t.data.chapterNumber && !data.chapterNumber)
+);
+const otherLanguages = languageVersions.filter(t => t.data.language !== data.language);
+
+// Get chapters if this is a multi-chapter scripture
+const chapters = data.chapterNumber !== undefined
+  ? await getChapters(data.scripture, data.language)
+  : [];
+const currentChapterIdx = chapters.findIndex(c => c.data.chapterNumber === data.chapterNumber);
+const prevChapter = currentChapterIdx > 0 ? chapters[currentChapterIdx - 1] : null;
+const nextChapter = currentChapterIdx < chapters.length - 1 ? chapters[currentChapterIdx + 1] : null;
+---
+
+<ReadingLayout
+  title={data.titleLatin}
+  description={data.description}
+  lang={data.language}
+  scriptureTitle={data.title}
+  scriptureTitleLatin={data.titleLatin.split(' - ')[0]}
+  ogType="article"
+  jsonLd={jsonLd}
+>
+  <article class="book-page" data-scripture-id={data.scripture}>
+    <header class="scripture-header">
+      <h1 class="scripture-title" lang={data.language}>{data.title}</h1>
+      <p class="scripture-subtitle">{data.titleLatin}</p>
+      <div class="scripture-meta">
+        <span>{data.category}</span>
+        <span>{data.author}</span>
+        {data.panth !== 'common' && <span>{data.panth}</span>}
+        <span>{LANGUAGE_NAMES[data.language]}</span>
+      </div>
+
+      {/* Language switcher */}
+      {otherLanguages.length > 0 && (
+        <nav class="language-switcher" aria-label="Language options">
+          <span class="lang-current">{LANGUAGE_NAMES[data.language]}</span>
+          {otherLanguages.map(ver => (
+            <a href={`${base}read/${ver.id}/`} class="lang-option">
+              {LANGUAGE_NAMES[ver.data.language]}
+            </a>
+          ))}
+        </nav>
+      )}
+    </header>
+
+    <div class="reading-content" lang={data.language}>
+      <Content />
+    </div>
+
+    {/* Chapter navigation */}
+    {chapters.length > 0 && (
+      <nav class="chapter-nav" aria-label="Chapter navigation">
+        {prevChapter ? (
+          <a href={`${base}read/${prevChapter.id}/`}>
+            &larr; {prevChapter.data.chapterTitle || `Chapter ${prevChapter.data.chapterNumber}`}
+          </a>
+        ) : (
+          <span class="disabled">&larr; Previous</span>
+        )}
+        <span class="chapter-indicator">
+          {data.chapterNumber} / {data.totalChapters || chapters.length}
+        </span>
+        {nextChapter ? (
+          <a href={`${base}read/${nextChapter.id}/`}>
+            {nextChapter.data.chapterTitle || `Chapter ${nextChapter.data.chapterNumber}`} &rarr;
+          </a>
+        ) : (
+          <span class="disabled">Next &rarr;</span>
+        )}
+      </nav>
+    )}
+  </article>
+</ReadingLayout>
+
+<style>
+  @import '../../styles/reading.css';
+
+  .language-switcher {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .lang-current {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    padding: 0.25em 0.7em;
+    background: var(--color-accent-light);
+    border-radius: 4px;
+  }
+
+  .lang-option {
+    font-size: 0.85rem;
+    padding: 0.25em 0.7em;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+  }
+
+  .lang-option:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+</style>

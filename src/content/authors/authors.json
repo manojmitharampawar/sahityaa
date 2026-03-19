@@ -1,0 +1,98 @@
+[
+  {
+    "id": "vyasa",
+    "name": "वेदव्यास",
+    "nameLatin": "Vyasa",
+    "namesByLanguage": { "hi": "वेदव्यास", "sa": "वेदव्यासः", "mr": "वेदव्यास", "en": "Vyasa" },
+    "period": "Ancient (Dvapara Yuga)",
+    "description": "Author of the Mahabharata, compiler of the Vedas, and narrator of the Puranas."
+  },
+  {
+    "id": "valmiki",
+    "name": "वाल्मीकि",
+    "nameLatin": "Valmiki",
+    "namesByLanguage": { "hi": "वाल्मीकि", "sa": "वाल्मीकिः", "en": "Valmiki" },
+    "period": "Ancient (Treta Yuga)",
+    "description": "Author of the Ramayana, the first Sanskrit epic poem. Known as the Adi Kavi."
+  },
+  {
+    "id": "tulsidas",
+    "name": "तुलसीदास",
+    "nameLatin": "Tulsidas",
+    "namesByLanguage": { "hi": "तुलसीदास", "en": "Tulsidas" },
+    "period": "1532-1623 CE",
+    "description": "Author of Ramcharitmanas, one of the greatest works in Hindi literature."
+  },
+  {
+    "id": "shankaracharya",
+    "name": "आदि शङ्कराचार्य",
+    "nameLatin": "Adi Shankaracharya",
+    "namesByLanguage": { "hi": "आदि शंकराचार्य", "sa": "आदिशङ्कराचार्यः", "en": "Adi Shankaracharya" },
+    "period": "788-820 CE",
+    "description": "Philosopher and theologian who consolidated the doctrine of Advaita Vedanta."
+  },
+  {
+    "id": "surdas",
+    "name": "सूरदास",
+    "nameLatin": "Surdas",
+    "namesByLanguage": { "hi": "सूरदास", "en": "Surdas" },
+    "period": "1478-1583 CE",
+    "description": "Blind poet and singer, known for his devotional songs dedicated to Lord Krishna."
+  },
+  {
+    "id": "unknown",
+    "name": "अज्ञात",
+    "nameLatin": "Unknown",
+    "namesByLanguage": { "hi": "अज्ञात", "sa": "अज्ञातः", "en": "Unknown" },
+    "period": "Various",
+    "description": "Author unknown or traditionally attributed to divine revelation (Shruti)."
+  },
+  {
+    "id": "tukaram",
+    "name": "संत तुकाराम",
+    "nameLatin": "Sant Tukaram",
+    "namesByLanguage": { "hi": "संत तुकाराम", "mr": "संत तुकाराम", "en": "Sant Tukaram" },
+    "period": "1608-1649 CE",
+    "description": "One of the greatest Varkari saints and poets of Maharashtra. His Abhangas are treasures of Marathi devotional literature."
+  },
+  {
+    "id": "dnyaneshwar",
+    "name": "संत ज्ञानेश्वर",
+    "nameLatin": "Sant Dnyaneshwar",
+    "namesByLanguage": { "hi": "संत ज्ञानेश्वर", "mr": "संत ज्ञानेश्वर", "en": "Sant Dnyaneshwar" },
+    "period": "1275-1296 CE",
+    "description": "Author of Dnyaneshwari (commentary on Bhagavad Gita in Marathi) and Amritanubhav. Pioneer of Marathi literature."
+  },
+  {
+    "id": "namdev",
+    "name": "संत नामदेव",
+    "nameLatin": "Sant Namdev",
+    "namesByLanguage": { "hi": "संत नामदेव", "mr": "संत नामदेव", "en": "Sant Namdev" },
+    "period": "1270-1350 CE",
+    "description": "Varkari saint whose Abhangas transcended regional boundaries. His verses appear in the Sikh Guru Granth Sahib as well."
+  },
+  {
+    "id": "eknath",
+    "name": "संत एकनाथ",
+    "nameLatin": "Sant Eknath",
+    "namesByLanguage": { "hi": "संत एकनाथ", "mr": "संत एकनाथ", "en": "Sant Eknath" },
+    "period": "1533-1599 CE",
+    "description": "Varkari saint, scholar, and social reformer. Edited Dnyaneshwari and composed Bharuds and Abhangas."
+  },
+  {
+    "id": "ramdas",
+    "name": "संत रामदास",
+    "nameLatin": "Sant Ramdas",
+    "namesByLanguage": { "hi": "संत रामदास", "mr": "संत रामदास", "en": "Sant Ramdas" },
+    "period": "1608-1681 CE",
+    "description": "Author of Dasbodh and Manache Shlok. Spiritual guru of Chhatrapati Shivaji Maharaj."
+  },
+  {
+    "id": "kabir",
+    "name": "संत कबीर",
+    "nameLatin": "Sant Kabir",
+    "namesByLanguage": { "hi": "संत कबीर", "mr": "संत कबीर", "en": "Sant Kabir" },
+    "period": "1398-1518 CE",
+    "description": "Mystic poet and saint whose Dohas and verses transcend religious boundaries, emphasizing inner devotion over rituals."
+  }
+]

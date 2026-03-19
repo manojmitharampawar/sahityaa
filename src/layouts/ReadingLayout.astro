@@ -1,0 +1,428 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  lang?: string;
+  scriptureTitle?: string;
+  scriptureTitleLatin?: string;
+  ogType?: string;
+  jsonLd?: Record<string, unknown>;
+}
+
+const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, ogType, jsonLd } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} lang={lang} ogType={ogType} jsonLd={jsonLd}>
+  <div class="reading-toolbar">
+    <a href={`${import.meta.env.BASE_URL}`} class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Sahityaa
+    </a>
+    {scriptureTitleLatin && <span class="toolbar-scripture-name">{scriptureTitleLatin}</span>}
+    <div class="toolbar-actions">
+      <button class="toolbar-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <button class="toolbar-btn" id="font-decrease" title="Decrease font size" aria-label="Decrease font size">A-</button>
+      <button class="toolbar-btn" id="font-increase" title="Increase font size" aria-label="Increase font size">A+</button>
+      <button class="toolbar-btn" id="read-later-toggle" title="Save for later" aria-label="Toggle read later">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </button>
+      <button class="toolbar-btn" id="favorite-toggle" title="Add to favorites" aria-label="Toggle favorite">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+      <button class="toolbar-btn" id="bookmark-toggle" title="Bookmark this page" aria-label="Toggle bookmark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <button class="toolbar-btn" id="add-to-list-btn" title="Add to reading list" aria-label="Add to reading list">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add to Reading List Modal -->
+  <div class="modal-overlay" id="list-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add to Reading List</h3>
+        <button class="modal-close" id="list-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="list-modal-lists"></div>
+        <div class="modal-create">
+          <input type="text" id="new-list-name" placeholder="New list name..." />
+          <button class="btn-create" id="create-list-btn">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <main class="reading-main">
+    <slot />
+  </main>
+
+  <div class="reading-progress">
+    <div class="reading-progress-bar" id="progress-bar" style="width: 0%"></div>
+  </div>
+</BaseLayout>
+
+<style>
+  @import '../styles/reading.css';
+
+  .toolbar-scripture-name {
+    font-size: 0.85em;
+    color: var(--color-text-muted);
+    font-style: italic;
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .toolbar-scripture-name {
+      display: inline;
+    }
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px var(--color-shadow);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .modal-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .modal-close {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    padding: 0 0.3rem;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    color: var(--color-text);
+  }
+
+  .modal-body {
+    padding: 1rem 1.2rem;
+  }
+
+  .modal-create {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  .modal-create input {
+    flex: 1;
+    padding: 0.5em 0.8em;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: inherit;
+  }
+
+  .modal-create input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .btn-create {
+    padding: 0.5em 1em;
+    background: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .btn-create:hover {
+    opacity: 0.9;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--color-text);
+    color: var(--color-bg);
+    padding: 0.6em 1.2em;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    z-index: 400;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+
+<script>
+  import { prefs, favorites, readLater, bookmarks, progress, readingLists } from '../scripts/storage';
+  import type { ThemeMode, FontSize } from '../scripts/storage';
+
+  // ─── Toast helper ───
+  function showToast(msg: string) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // ─── Theme toggle ───
+  const themeToggle = document.getElementById('theme-toggle');
+  const themes: ThemeMode[] = ['sepia', 'light', 'dark'];
+  const themeLabels: Record<ThemeMode, string> = { sepia: 'Sepia', light: 'Light', dark: 'Dark' };
+  themeToggle?.addEventListener('click', () => {
+    const current = prefs.getTheme();
+    const idx = themes.indexOf(current);
+    const next = themes[(idx + 1) % themes.length];
+    document.documentElement.setAttribute('data-theme', next);
+    prefs.setTheme(next);
+    showToast(`Theme: ${themeLabels[next]}`);
+  });
+
+  // ─── Font size controls ───
+  const sizes: FontSize[] = ['sm', 'md', 'lg', 'xl'];
+  const sizeLabels: Record<FontSize, string> = { sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra Large' };
+  function getCurrentSizeIdx(): number {
+    return Math.max(0, sizes.indexOf(prefs.getFontSize()));
+  }
+  function setFontSize(idx: number) {
+    const clamped = Math.max(0, Math.min(sizes.length - 1, idx));
+    sizes.forEach(s => document.documentElement.classList.remove(`font-size-${s}`));
+    document.documentElement.classList.add(`font-size-${sizes[clamped]}`);
+    prefs.setFontSize(sizes[clamped]);
+    showToast(`Font: ${sizeLabels[sizes[clamped]]}`);
+  }
+  document.getElementById('font-decrease')?.addEventListener('click', () => {
+    setFontSize(getCurrentSizeIdx() - 1);
+  });
+  document.getElementById('font-increase')?.addEventListener('click', () => {
+    setFontSize(getCurrentSizeIdx() + 1);
+  });
+
+  // ─── Get scripture context ───
+  const scriptureEl = document.querySelector<HTMLElement>('[data-scripture-id]');
+  const scriptureId = scriptureEl?.dataset.scriptureId || '';
+  const pageSlug = window.location.pathname;
+  const pageLang = document.documentElement.lang || 'sa';
+
+  function setSvgFill(btn: HTMLElement | null, filled: boolean) {
+    btn?.classList.toggle('active', filled);
+    btn?.querySelector('svg')?.setAttribute('fill', filled ? 'currentColor' : 'none');
+  }
+
+  // ─── Favorite toggle (IndexedDB) ───
+  const favoriteBtn = document.getElementById('favorite-toggle');
+  async function initFavorite() {
+    if (!scriptureId) return;
+    const isFav = await favorites.isFavorite(scriptureId);
+    setSvgFill(favoriteBtn, isFav);
+  }
+  favoriteBtn?.addEventListener('click', async () => {
+    if (!scriptureId) return;
+    const isNowFav = await favorites.toggle(scriptureId);
+    setSvgFill(favoriteBtn, isNowFav);
+    showToast(isNowFav ? 'Added to favorites' : 'Removed from favorites');
+  });
+  initFavorite();
+
+  // ─── Read Later toggle (IndexedDB) ───
+  const readLaterBtn = document.getElementById('read-later-toggle');
+  async function initReadLater() {
+    if (!scriptureId) return;
+    const inList = await readLater.isInList(scriptureId);
+    setSvgFill(readLaterBtn, inList);
+  }
+  readLaterBtn?.addEventListener('click', async () => {
+    if (!scriptureId) return;
+    const isNowSaved = await readLater.toggle(scriptureId);
+    setSvgFill(readLaterBtn, isNowSaved);
+    showToast(isNowSaved ? 'Saved for later' : 'Removed from read later');
+  });
+  initReadLater();
+
+  // ─── Bookmark toggle (IndexedDB) ───
+  const bookmarkBtn = document.getElementById('bookmark-toggle');
+  async function initBookmark() {
+    const existing = await bookmarks.getForPage(pageSlug);
+    setSvgFill(bookmarkBtn, !!existing);
+  }
+  bookmarkBtn?.addEventListener('click', async () => {
+    const scrollPercent = window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight) * 100;
+    const isNowBookmarked = await bookmarks.toggleForPage(pageSlug, {
+      scriptureId,
+      language: pageLang,
+      scrollPercent,
+      note: '',
+      title: document.title,
+    });
+    setSvgFill(bookmarkBtn, isNowBookmarked);
+    showToast(isNowBookmarked ? 'Page bookmarked' : 'Bookmark removed');
+  });
+  initBookmark();
+
+  // ─── Reading Progress (IndexedDB, debounced) ───
+  let progressTimer: ReturnType<typeof setTimeout>;
+  function getScrollPercent(): number {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    return docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  }
+  function updateProgressBar() {
+    const pct = getScrollPercent();
+    const bar = document.getElementById('progress-bar');
+    if (bar) bar.style.width = `${Math.min(100, pct)}%`;
+  }
+  async function saveProgress() {
+    if (!scriptureId) return;
+    const pct = getScrollPercent();
+    await progress.save({
+      scriptureId,
+      language: pageLang,
+      lastPageSlug: pageSlug,
+      scrollPercent: pct,
+      percentComplete: Math.round(pct),
+      lastReadAt: Date.now(),
+    });
+  }
+  window.addEventListener('scroll', () => {
+    updateProgressBar();
+    clearTimeout(progressTimer);
+    progressTimer = setTimeout(saveProgress, 1500);
+  }, { passive: true });
+  updateProgressBar();
+  // Save initial progress on page load
+  setTimeout(saveProgress, 2000);
+
+  // ─── Resume reading (restore scroll position) ───
+  async function tryResumeReading() {
+    if (!scriptureId) return;
+    const saved = await progress.get(scriptureId, pageLang);
+    if (saved && saved.lastPageSlug === pageSlug && saved.scrollPercent > 5) {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const targetScroll = (saved.scrollPercent / 100) * docHeight;
+      // Only restore if user hasn't already scrolled
+      if (window.scrollY < 10) {
+        window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        showToast('Resumed where you left off');
+      }
+    }
+  }
+  // Delay resume to allow page to fully render
+  setTimeout(tryResumeReading, 500);
+
+  // ─── Add to Reading List modal ───
+  const addToListBtn = document.getElementById('add-to-list-btn');
+  const listModal = document.getElementById('list-modal-overlay');
+  const listModalClose = document.getElementById('list-modal-close');
+  const listModalLists = document.getElementById('list-modal-lists');
+  const newListInput = document.getElementById('new-list-name') as HTMLInputElement;
+  const createListBtn = document.getElementById('create-list-btn');
+
+  async function renderListModal() {
+    if (!listModalLists) return;
+    const lists = await readingLists.getAll();
+    if (lists.length === 0) {
+      listModalLists.innerHTML = '<p style="color:var(--color-text-muted);font-size:0.9rem;">No reading lists yet. Create one below.</p>';
+      return;
+    }
+    const listsForThis = await readingLists.getListsForScripture(scriptureId);
+    const inListIds = new Set(listsForThis.map(l => l.id));
+
+    listModalLists.innerHTML = lists.map(l => `
+      <label class="list-option" style="display:flex;align-items:center;gap:0.6em;padding:0.5em 0;cursor:pointer;font-size:0.9rem;">
+        <input type="checkbox" data-list-id="${l.id}" ${inListIds.has(l.id) ? 'checked' : ''} style="accent-color:var(--color-accent);width:16px;height:16px;" />
+        <span>${l.name}</span>
+        <span style="margin-left:auto;font-size:0.75rem;color:var(--color-text-muted);">${l.items.length} items</span>
+      </label>
+    `).join('');
+
+    // Handle checkbox changes
+    listModalLists.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const input = e.target as HTMLInputElement;
+        const listId = input.dataset.listId!;
+        if (input.checked) {
+          await readingLists.addItem(listId, scriptureId);
+          showToast('Added to list');
+        } else {
+          await readingLists.removeItem(listId, scriptureId);
+          showToast('Removed from list');
+        }
+      });
+    });
+  }
+
+  addToListBtn?.addEventListener('click', async () => {
+    await renderListModal();
+    listModal?.classList.add('open');
+  });
+
+  listModalClose?.addEventListener('click', () => {
+    listModal?.classList.remove('open');
+  });
+
+  listModal?.addEventListener('click', (e) => {
+    if (e.target === listModal) listModal.classList.remove('open');
+  });
+
+  createListBtn?.addEventListener('click', async () => {
+    const name = newListInput?.value.trim();
+    if (!name) return;
+    await readingLists.create(name);
+    if (newListInput) newListInput.value = '';
+    await renderListModal();
+    showToast(`List "${name}" created`);
+  });
+
+  newListInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') createListBtn?.click();
+  });
+</script>

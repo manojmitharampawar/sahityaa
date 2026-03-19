@@ -1,0 +1,205 @@
+---
+const base = import.meta.env.BASE_URL;
+const currentPath = Astro.url.pathname;
+
+const navLinks = [
+  { label: 'Home', href: base },
+  { label: 'Browse', href: `${base}browse/` },
+  { label: 'Search', href: `${base}search/` },
+  { label: 'My Library', href: `${base}my-library/` },
+];
+---
+
+<header class="site-header">
+  <div class="header-inner container">
+    <a href={base} class="site-logo">
+      <span class="logo-symbol">ॐ</span>
+      <span class="logo-text">Sahityaa</span>
+    </a>
+
+    <nav class="main-nav" id="main-nav">
+      {navLinks.map(link => (
+        <a
+          href={link.href}
+          class:list={['nav-link', { active: currentPath === link.href || (link.href !== base && currentPath.startsWith(link.href)) }]}
+        >
+          {link.label === 'Search' && <svg class="nav-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
+          {link.label === 'My Library' && <svg class="nav-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="header-actions">
+      <a href={`${base}search/`} class="toolbar-btn search-btn-mobile" title="Search" aria-label="Search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <button class="toolbar-btn" id="header-theme-toggle" title="Switch theme" aria-label="Switch theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-header-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .site-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    text-decoration: none;
+    color: var(--color-text);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .logo-symbol {
+    font-size: 1.4em;
+    color: var(--color-accent);
+    font-family: var(--font-reading);
+  }
+
+  .logo-text {
+    font-family: var(--font-reading);
+  }
+
+  .main-nav {
+    display: none;
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+  }
+
+  .nav-icon {
+    opacity: 0.7;
+  }
+
+  .search-btn-mobile {
+    text-decoration: none;
+  }
+
+  @media (min-width: 768px) {
+    .search-btn-mobile {
+      display: none;
+    }
+  }
+
+  .nav-link:hover {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    text-decoration: none;
+  }
+
+  .nav-link.active {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .toolbar-btn {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .toolbar-btn:hover {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    padding: 0.4rem;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+  }
+
+  .menu-toggle:hover {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+
+  @media (min-width: 768px) {
+    .main-nav {
+      display: flex;
+    }
+    .menu-toggle {
+      display: none;
+    }
+  }
+
+  /* Mobile nav open state */
+  .main-nav.open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-header-border);
+    padding: 0.5rem 1.5rem 1rem;
+    box-shadow: 0 4px 12px var(--color-shadow);
+  }
+</style>
+
+<script>
+  function initHeader() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainNav = document.getElementById('main-nav');
+    menuToggle?.addEventListener('click', () => {
+      mainNav?.classList.toggle('open');
+    });
+
+    const headerTheme = document.getElementById('header-theme-toggle');
+    const themes = ['sepia', 'light', 'dark'] as const;
+    headerTheme?.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'sepia';
+      const idx = themes.indexOf(current as typeof themes[number]);
+      const next = themes[(idx + 1) % themes.length];
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('sahityaa_theme', next);
+    });
+  }
+
+  initHeader();
+  document.addEventListener('astro:after-swap', initHeader);
+</script>

@@ -1,0 +1,246 @@
+---
+import BrowseLayout from '../../layouts/BrowseLayout.astro';
+
+const base = import.meta.env.BASE_URL;
+---
+
+<BrowseLayout title="Search" description="Search through sacred scriptures and texts">
+  <div class="search-page">
+    <h1 class="search-heading">Search Scriptures</h1>
+    <div class="search-box">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search by title, content, author..."
+        autocomplete="off"
+        autofocus
+      />
+      <kbd class="search-shortcut">Ctrl+K</kbd>
+    </div>
+
+    <div id="search-results" class="search-results">
+      <p class="search-placeholder">Start typing to search through all scriptures and texts.</p>
+    </div>
+  </div>
+</BrowseLayout>
+
+<style>
+  .search-page {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .search-heading {
+    font-family: var(--font-reading);
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 1.5rem;
+  }
+
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  #search-input {
+    width: 100%;
+    padding: 0.9rem 1rem 0.9rem 3rem;
+    font-size: 1.05rem;
+    font-family: inherit;
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    transition: border-color 0.2s ease;
+  }
+
+  #search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  #search-input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .search-shortcut {
+    position: absolute;
+    right: 1rem;
+    padding: 0.2em 0.5em;
+    font-size: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    pointer-events: none;
+  }
+
+  .search-results {
+    min-height: 200px;
+  }
+
+  .search-placeholder {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 3rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  :global(.search-result-item) {
+    display: block;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--color-border-light);
+    border-radius: 10px;
+    margin-bottom: 0.8rem;
+    background: var(--color-bg-card);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  :global(.search-result-item:hover) {
+    border-color: var(--color-accent);
+    box-shadow: 0 2px 8px var(--color-shadow);
+    text-decoration: none;
+  }
+
+  :global(.search-result-title) {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.3rem;
+  }
+
+  :global(.search-result-meta) {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  :global(.search-result-excerpt) {
+    font-size: 0.88rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  :global(.search-result-excerpt mark) {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+    border-radius: 2px;
+    padding: 0 0.15em;
+  }
+
+  :global(.search-no-results) {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 3rem 1rem;
+  }
+
+  :global(.search-count) {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 640px) {
+    .search-shortcut {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const BASE = import.meta.env.BASE_URL;
+
+  function initSearch() {
+    const input = document.getElementById('search-input') as HTMLInputElement;
+    const results = document.getElementById('search-results');
+    if (!input || !results) return;
+
+    let pagefind: any = null;
+    let debounceTimer: ReturnType<typeof setTimeout>;
+
+    async function loadPagefind() {
+      if (pagefind) return pagefind;
+      try {
+        pagefind = await import(/* @vite-ignore */ `${BASE}pagefind/pagefind.js`);
+        await pagefind.init();
+        return pagefind;
+      } catch {
+        results!.innerHTML = '<p class="search-no-results">Search index not available. Please run a full build first.</p>';
+        return null;
+      }
+    }
+
+    async function doSearch(query: string) {
+      if (!query.trim()) {
+        results!.innerHTML = '<p class="search-placeholder">Start typing to search through all scriptures and texts.</p>';
+        return;
+      }
+
+      const pf = await loadPagefind();
+      if (!pf) return;
+
+      const search = await pf.search(query);
+      if (search.results.length === 0) {
+        results!.innerHTML = `<p class="search-no-results">No results found for "<strong>${escapeHtml(query)}</strong>"</p>`;
+        return;
+      }
+
+      const items = await Promise.all(search.results.slice(0, 20).map((r: any) => r.data()));
+      let html = `<p class="search-count">${search.results.length} result${search.results.length > 1 ? 's' : ''} found</p>`;
+
+      for (const item of items) {
+        const url = item.url.replace(/^\/sahityaa/, BASE.replace(/\/$/, ''));
+        html += `
+          <a href="${url}" class="search-result-item">
+            <div class="search-result-title">${escapeHtml(item.meta?.title || 'Untitled')}</div>
+            <div class="search-result-excerpt">${item.excerpt || ''}</div>
+          </a>
+        `;
+      }
+
+      results!.innerHTML = html;
+    }
+
+    function escapeHtml(str: string): string {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => doSearch(input.value), 250);
+    });
+
+    // Ctrl+K shortcut
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        input.focus();
+        input.select();
+      }
+    });
+
+    // Check URL params
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      input.value = q;
+      doSearch(q);
+    }
+  }
+
+  initSearch();
+  document.addEventListener('astro:after-swap', initSearch);
+</script>

@@ -1,0 +1,670 @@
+---
+import BrowseLayout from '../../layouts/BrowseLayout.astro';
+import Breadcrumbs from '../../components/common/Breadcrumbs.astro';
+import { getScriptureIndex } from '../../utils/content-helpers';
+
+const scriptures = await getScriptureIndex();
+const base = import.meta.env.BASE_URL;
+
+const scriptureData = JSON.stringify(scriptures.map(s => ({
+  id: s.id,
+  firstTextId: s.firstTextId,
+  titleLatin: s.titleLatin,
+  titles: s.titles,
+  category: s.category,
+  languages: s.languages,
+})));
+---
+
+<BrowseLayout title="My Library">
+  <Breadcrumbs items={[
+    { label: 'Home', href: base },
+    { label: 'My Library' },
+  ]} />
+
+  <h1 class="page-title">My Library</h1>
+  <p class="page-subtitle">Your favorites, bookmarks, and reading lists are stored in your browser.</p>
+
+  <!-- Continue Reading Section -->
+  <section class="continue-section" id="continue-section" style="display:none;">
+    <h2 class="section-subtitle">Continue Reading</h2>
+    <div id="continue-reading-list" class="continue-list"></div>
+  </section>
+
+  <!-- Tabs -->
+  <div class="library-tabs" role="tablist" aria-label="Library sections">
+    <button class="tab active" data-tab="favorites" role="tab" aria-selected="true" aria-controls="panel-favorites">
+      <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Favorites
+    </button>
+    <button class="tab" data-tab="read-later" role="tab" aria-selected="false" aria-controls="panel-read-later">
+      <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Read Later
+    </button>
+    <button class="tab" data-tab="bookmarks" role="tab" aria-selected="false" aria-controls="panel-bookmarks">
+      <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      Bookmarks
+    </button>
+    <button class="tab" data-tab="reading-lists" role="tab" aria-selected="false" aria-controls="panel-reading-lists">
+      <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Lists
+    </button>
+  </div>
+
+  <!-- Favorites Panel -->
+  <div class="tab-panel active" id="panel-favorites" role="tabpanel">
+    <div id="favorites-list" class="items-list">
+      <p class="empty-state loading-state">Loading...</p>
+    </div>
+  </div>
+
+  <!-- Read Later Panel -->
+  <div class="tab-panel" id="panel-read-later" role="tabpanel">
+    <div id="read-later-list" class="items-list">
+      <p class="empty-state loading-state">Loading...</p>
+    </div>
+  </div>
+
+  <!-- Bookmarks Panel -->
+  <div class="tab-panel" id="panel-bookmarks" role="tabpanel">
+    <div id="bookmarks-list" class="items-list">
+      <p class="empty-state loading-state">Loading...</p>
+    </div>
+  </div>
+
+  <!-- Reading Lists Panel -->
+  <div class="tab-panel" id="panel-reading-lists" role="tabpanel">
+    <div class="reading-lists-header">
+      <div class="create-list-form">
+        <input type="text" id="new-list-name" placeholder="New list name..." />
+        <button class="btn-create-list" id="create-list-btn">+ Create</button>
+      </div>
+    </div>
+    <div id="reading-lists-container" class="items-list">
+      <p class="empty-state loading-state">Loading...</p>
+    </div>
+  </div>
+</BrowseLayout>
+
+<script define:vars={{ scriptureData, base }}>
+  // Store in window for the module script to access
+  window.__SAHITYAA_SCRIPTURES__ = JSON.parse(scriptureData);
+  window.__SAHITYAA_BASE__ = base;
+</script>
+
+<script>
+  import { favorites, readLater, bookmarks, progress, readingLists } from '../../scripts/storage';
+
+  const scriptures = (window as any).__SAHITYAA_SCRIPTURES__;
+  const base = (window as any).__SAHITYAA_BASE__;
+
+  // Tab switching with ARIA
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      (tab as HTMLElement).classList.add('active');
+      (tab as HTMLElement).setAttribute('aria-selected', 'true');
+      const tabName = (tab as HTMLElement).dataset.tab;
+      document.getElementById(`panel-${tabName}`)?.classList.add('active');
+    });
+  });
+
+  function getScripture(id: string) {
+    return scriptures.find((s: any) => s.id === id);
+  }
+
+  function renderTextItem(id: string): string {
+    const s = getScripture(id);
+    if (!s) return '';
+    const nativeTitle = s.titles['sa'] || s.titles['hi'] || Object.values(s.titles)[0] || s.titleLatin;
+    return `<a href="${base}read/${s.firstTextId}/" class="library-item">
+      <span class="item-category">${s.category}</span>
+      <span class="item-title-native">${nativeTitle}</span>
+      <span class="item-title-latin">${s.titleLatin}</span>
+    </a>`;
+  }
+
+  function emptyMsg(msg: string): string {
+    return `<p class="empty-state">${msg}</p>`;
+  }
+
+  // ─── Continue Reading ───
+  async function renderContinueReading() {
+    const allProgress = await progress.getAll();
+    const section = document.getElementById('continue-section');
+    const container = document.getElementById('continue-reading-list');
+    if (!section || !container) return;
+
+    const recent = allProgress.filter(p => p.percentComplete > 0 && p.percentComplete < 100).slice(0, 5);
+    if (recent.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    container.innerHTML = recent.map(p => {
+      const s = getScripture(p.scriptureId);
+      const nativeTitle = s ? (s.titles['sa'] || s.titles['hi'] || s.titleLatin) : p.scriptureId;
+      const latinTitle = s?.titleLatin || p.scriptureId;
+      const timeAgo = getTimeAgo(p.lastReadAt);
+      return `<a href="${p.lastPageSlug}" class="continue-item">
+        <div class="continue-info">
+          <span class="continue-title">${nativeTitle}</span>
+          <span class="continue-subtitle">${latinTitle}</span>
+          <span class="continue-meta">${timeAgo} &middot; ${p.percentComplete}% complete</span>
+        </div>
+        <div class="continue-progress-ring">
+          <svg width="40" height="40" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="17" fill="none" stroke="var(--color-progress-bg)" stroke-width="3"/>
+            <circle cx="20" cy="20" r="17" fill="none" stroke="var(--color-progress-fill)" stroke-width="3"
+              stroke-dasharray="${Math.round(17 * 2 * Math.PI * p.percentComplete / 100)} ${Math.round(17 * 2 * Math.PI)}"
+              stroke-linecap="round" transform="rotate(-90 20 20)"/>
+          </svg>
+          <span class="ring-pct">${p.percentComplete}%</span>
+        </div>
+      </a>`;
+    }).join('');
+  }
+
+  function getTimeAgo(timestamp: number): string {
+    const diff = Date.now() - timestamp;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  // ─── Favorites ───
+  async function renderFavorites() {
+    const container = document.getElementById('favorites-list');
+    if (!container) return;
+    const favs = await favorites.getAll();
+    container.innerHTML = favs.length === 0
+      ? emptyMsg('No favorites yet. Use the heart icon while reading to add texts here.')
+      : favs.map(renderTextItem).join('');
+  }
+
+  // ─── Read Later ───
+  async function renderReadLater() {
+    const container = document.getElementById('read-later-list');
+    if (!container) return;
+    const items = await readLater.getAll();
+    container.innerHTML = items.length === 0
+      ? emptyMsg('Nothing saved for later. Use the clock icon while reading to save texts.')
+      : items.map(renderTextItem).join('');
+  }
+
+  // ─── Bookmarks ───
+  async function renderBookmarks() {
+    const container = document.getElementById('bookmarks-list');
+    if (!container) return;
+    const items = await bookmarks.getAll();
+    const sorted = items.sort((a, b) => b.createdAt - a.createdAt);
+    if (sorted.length === 0) {
+      container.innerHTML = emptyMsg('No bookmarks yet. Use the bookmark icon while reading to save your place.');
+      return;
+    }
+    container.innerHTML = sorted.map(b =>
+      `<div class="bookmark-item">
+        <a href="${b.pageSlug}" class="library-item">
+          <span class="item-title-latin">${b.title}</span>
+          <span class="item-date">${new Date(b.createdAt).toLocaleDateString()}</span>
+        </a>
+        <button class="btn-remove-bookmark" data-bookmark-id="${b.id}" title="Remove bookmark">&times;</button>
+      </div>`
+    ).join('');
+
+    container.querySelectorAll('.btn-remove-bookmark').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.bookmarkId!;
+        await bookmarks.remove(id);
+        await renderBookmarks();
+      });
+    });
+  }
+
+  // ─── Reading Lists ───
+  async function renderReadingLists() {
+    const container = document.getElementById('reading-lists-container');
+    if (!container) return;
+    const lists = await readingLists.getAll();
+    if (lists.length === 0) {
+      container.innerHTML = emptyMsg('No reading lists yet. Create one above to organize your reading.');
+      return;
+    }
+    container.innerHTML = lists.map(list =>
+      `<div class="reading-list-card">
+        <div class="list-header">
+          <h3 class="list-name">${list.name}</h3>
+          <div class="list-actions">
+            <button class="btn-rename-list" data-list-id="${list.id}" title="Rename">Rename</button>
+            <button class="btn-delete-list" data-list-id="${list.id}" title="Delete">Delete</button>
+          </div>
+        </div>
+        <p class="list-count">${list.items.length} text${list.items.length !== 1 ? 's' : ''}</p>
+        <div class="list-items">${list.items.length > 0 ? list.items.map(id => {
+          return `<div class="list-item-row">${renderTextItem(id)}<button class="btn-remove-item" data-list-id="${list.id}" data-item-id="${id}" title="Remove">&times;</button></div>`;
+        }).join('') : '<p class="empty-state" style="padding:0.5rem;">Empty list — add texts from the reader</p>'}</div>
+      </div>`
+    ).join('');
+
+    // Delete list
+    container.querySelectorAll('.btn-delete-list').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this reading list?')) return;
+        await readingLists.remove((btn as HTMLElement).dataset.listId!);
+        await renderReadingLists();
+      });
+    });
+
+    // Rename list
+    container.querySelectorAll('.btn-rename-list').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.listId!;
+        const lists = await readingLists.getAll();
+        const list = lists.find(l => l.id === id);
+        const newName = prompt('Enter new name:', list?.name);
+        if (!newName || !newName.trim()) return;
+        await readingLists.rename(id, newName.trim());
+        await renderReadingLists();
+      });
+    });
+
+    // Remove item from list
+    container.querySelectorAll('.btn-remove-item').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const listId = (btn as HTMLElement).dataset.listId!;
+        const itemId = (btn as HTMLElement).dataset.itemId!;
+        await readingLists.removeItem(listId, itemId);
+        await renderReadingLists();
+      });
+    });
+  }
+
+  // ─── Create new list ───
+  const createBtn = document.getElementById('create-list-btn');
+  const nameInput = document.getElementById('new-list-name') as HTMLInputElement;
+
+  createBtn?.addEventListener('click', async () => {
+    const name = nameInput?.value.trim();
+    if (!name) { nameInput?.focus(); return; }
+    await readingLists.create(name);
+    if (nameInput) nameInput.value = '';
+    await renderReadingLists();
+  });
+
+  nameInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') createBtn?.click();
+  });
+
+  // ─── Initial render ───
+  renderContinueReading();
+  renderFavorites();
+  renderReadLater();
+  renderBookmarks();
+  renderReadingLists();
+</script>
+
+<style>
+  .page-title {
+    font-family: var(--font-reading);
+    font-size: 2rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .page-subtitle {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Continue Reading */
+  .continue-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .section-subtitle {
+    font-family: var(--font-reading);
+    font-size: 1.2rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .library-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .tab {
+    padding: 0.7em 1.2em;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .tab-icon {
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .tab:hover { color: var(--color-accent); }
+  .tab:hover .tab-icon { opacity: 1; }
+
+  .tab.active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+  }
+
+  .tab.active .tab-icon { opacity: 1; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 2rem;
+    font-style: italic;
+  }
+
+  .reading-lists-header {
+    margin-bottom: 1rem;
+  }
+
+  .create-list-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .create-list-form input {
+    flex: 1;
+    padding: 0.5em 0.8em;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: inherit;
+    max-width: 300px;
+  }
+
+  .create-list-form input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .btn-create-list {
+    padding: 0.5em 1em;
+    background: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .btn-create-list:hover { opacity: 0.9; }
+</style>
+
+<style is:global>
+  /* Continue reading items */
+  .continue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .continue-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 1em 1.2em;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .continue-item:hover {
+    border-color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .continue-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+    min-width: 0;
+  }
+
+  .continue-title {
+    font-family: var(--font-reading);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .continue-subtitle {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
+
+  .continue-meta {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .continue-progress-ring {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+  }
+
+  .ring-pct {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  /* Library items */
+  .library-item {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    padding: 0.8em 1em;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-light);
+    border-radius: 6px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .library-item:hover {
+    border-color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .item-category {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2em 0.5em;
+    background: var(--color-tag-bg);
+    color: var(--color-tag-text);
+    border-radius: 3px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .item-title-native {
+    font-family: var(--font-reading);
+    font-weight: 600;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-title-latin {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-date {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* Bookmark items */
+  .bookmark-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-remove-bookmark {
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+
+  .btn-remove-bookmark:hover {
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.1);
+  }
+
+  /* Reading list cards */
+  .reading-list-card {
+    padding: 1.2rem;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .list-name {
+    font-family: var(--font-reading);
+    font-size: 1.1rem;
+    margin-bottom: 0;
+  }
+
+  .list-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .list-count {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.8rem;
+  }
+
+  .list-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .list-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-remove-item {
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+
+  .btn-remove-item:hover {
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.1);
+  }
+
+  .btn-rename-list,
+  .btn-delete-list {
+    font-size: 0.75rem;
+    padding: 0.25em 0.5em;
+    border-radius: 4px;
+    cursor: pointer;
+    background: none;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .btn-rename-list:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .btn-delete-list {
+    border-color: #c0392b;
+    color: #c0392b;
+  }
+
+  .btn-delete-list:hover {
+    background: rgba(192, 57, 43, 0.1);
+  }
+</style>

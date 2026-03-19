@@ -1,0 +1,92 @@
+/* === Theme Variables === */
+
+/* Sepia (Default) - Warm parchment book feel */
+:root,
+[data-theme="sepia"] {
+  --color-bg: #FDF5E6;
+  --color-bg-secondary: #F5E6C8;
+  --color-bg-card: #FFF8EE;
+  --color-text: #3B2F2F;
+  --color-text-secondary: #6B5B4F;
+  --color-text-muted: #8B7B6F;
+  --color-accent: #8B4513;
+  --color-accent-hover: #A0522D;
+  --color-accent-light: rgba(139, 69, 19, 0.1);
+  --color-border: #D2B48C;
+  --color-border-light: #E8D5B7;
+  --color-highlight: #DAA520;
+  --color-divider: #C4A882;
+  --color-shadow: rgba(139, 69, 19, 0.15);
+  --color-header-bg: #F0E0C8;
+  --color-header-border: #D2B48C;
+  --color-page-shadow: rgba(0, 0, 0, 0.08);
+  --color-btn-primary-bg: #8B4513;
+  --color-btn-primary-text: #FDF5E6;
+  --color-btn-secondary-bg: transparent;
+  --color-btn-secondary-text: #8B4513;
+  --color-btn-secondary-border: #8B4513;
+  --color-progress-bg: #E8D5B7;
+  --color-progress-fill: #8B4513;
+  --color-tag-bg: rgba(139, 69, 19, 0.08);
+  --color-tag-text: #8B4513;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  --color-bg: #FFFFFF;
+  --color-bg-secondary: #F8F9FA;
+  --color-bg-card: #FFFFFF;
+  --color-text: #2D3436;
+  --color-text-secondary: #636E72;
+  --color-text-muted: #95A5A6;
+  --color-accent: #8B4513;
+  --color-accent-hover: #A0522D;
+  --color-accent-light: rgba(139, 69, 19, 0.08);
+  --color-border: #DFE6E9;
+  --color-border-light: #F0F3F5;
+  --color-highlight: #DAA520;
+  --color-divider: #DFE6E9;
+  --color-shadow: rgba(0, 0, 0, 0.08);
+  --color-header-bg: #FFFFFF;
+  --color-header-border: #DFE6E9;
+  --color-page-shadow: rgba(0, 0, 0, 0.06);
+  --color-btn-primary-bg: #8B4513;
+  --color-btn-primary-text: #FFFFFF;
+  --color-btn-secondary-bg: transparent;
+  --color-btn-secondary-text: #8B4513;
+  --color-btn-secondary-border: #8B4513;
+  --color-progress-bg: #DFE6E9;
+  --color-progress-fill: #8B4513;
+  --color-tag-bg: rgba(139, 69, 19, 0.06);
+  --color-tag-text: #8B4513;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --color-bg: #1A1A2E;
+  --color-bg-secondary: #16213E;
+  --color-bg-card: #1E2A45;
+  --color-text: #E8D5B7;
+  --color-text-secondary: #B8A898;
+  --color-text-muted: #7B6F65;
+  --color-accent: #C9A96E;
+  --color-accent-hover: #DDB978;
+  --color-accent-light: rgba(201, 169, 110, 0.15);
+  --color-border: #2A3A5E;
+  --color-border-light: #222E4A;
+  --color-highlight: #DAA520;
+  --color-divider: #2A3A5E;
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-header-bg: #16213E;
+  --color-header-border: #2A3A5E;
+  --color-page-shadow: rgba(0, 0, 0, 0.2);
+  --color-btn-primary-bg: #C9A96E;
+  --color-btn-primary-text: #1A1A2E;
+  --color-btn-secondary-bg: transparent;
+  --color-btn-secondary-text: #C9A96E;
+  --color-btn-secondary-border: #C9A96E;
+  --color-progress-bg: #2A3A5E;
+  --color-progress-fill: #C9A96E;
+  --color-tag-bg: rgba(201, 169, 110, 0.12);
+  --color-tag-text: #C9A96E;
+}

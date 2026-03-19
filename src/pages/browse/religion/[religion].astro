@@ -1,0 +1,60 @@
+---
+import BrowseLayout from '../../../layouts/BrowseLayout.astro';
+import TextCard from '../../../components/cards/TextCard.astro';
+import Breadcrumbs from '../../../components/common/Breadcrumbs.astro';
+import { getScriptureIndex, RELIGION_NAMES } from '../../../utils/content-helpers';
+
+export async function getStaticPaths() {
+  return Object.keys(RELIGION_NAMES).map(religion => ({
+    params: { religion },
+    props: { religion, religionName: RELIGION_NAMES[religion] },
+  }));
+}
+
+const { religion, religionName } = Astro.props;
+const scriptures = await getScriptureIndex();
+const filtered = scriptures.filter(s => s.religion === religion);
+const base = import.meta.env.BASE_URL;
+---
+
+<BrowseLayout title={`${religionName} Texts`}>
+  <Breadcrumbs items={[
+    { label: 'Home', href: base },
+    { label: 'Browse', href: `${base}browse/` },
+    { label: religionName },
+  ]} />
+
+  <header class="page-header">
+    <h1 class="page-title">{religionName} Texts</h1>
+    <p class="result-count">{filtered.length} text{filtered.length !== 1 ? 's' : ''}</p>
+  </header>
+
+  <div class="texts-grid">
+    {filtered.map(s => (
+      <TextCard
+        id={s.id}
+        firstTextId={s.firstTextId}
+        titleLatin={s.titleLatin}
+        titles={s.titles}
+        category={s.category}
+        author={s.author}
+        languages={s.languages}
+        description={s.description}
+        panth={s.panth}
+      />
+    ))}
+  </div>
+
+  {filtered.length === 0 && (
+    <p class="empty-state">No texts in this tradition yet.</p>
+  )}
+</BrowseLayout>
+
+<style>
+  .page-header { margin-bottom: 2rem; }
+  .page-title { font-family: var(--font-reading); font-size: 2rem; font-weight: 700; }
+  .result-count { color: var(--color-text-muted); font-size: 0.9rem; margin-top: 0.5rem; }
+  .texts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
+  .empty-state { text-align: center; color: var(--color-text-muted); padding: 3rem; font-style: italic; }
+  @media (max-width: 640px) { .texts-grid { grid-template-columns: 1fr; } }
+</style>

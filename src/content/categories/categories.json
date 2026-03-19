@@ -1,0 +1,115 @@
+[
+  {
+    "id": "vedas",
+    "name": "वेद",
+    "nameLatin": "Vedas",
+    "namesByLanguage": { "hi": "वेद", "sa": "वेदाः", "en": "Vedas" },
+    "description": "The oldest and most authoritative scriptures of Hinduism, considered Shruti (divine revelation).",
+    "order": 1
+  },
+  {
+    "id": "upanishads",
+    "name": "उपनिषद",
+    "nameLatin": "Upanishads",
+    "namesByLanguage": { "hi": "उपनिषद", "sa": "उपनिषदः", "en": "Upanishads" },
+    "description": "Philosophical texts that form the concluding part of the Vedas, exploring the nature of Brahman and Atman.",
+    "parentCategory": "vedas",
+    "order": 2
+  },
+  {
+    "id": "puranas",
+    "name": "पुराण",
+    "nameLatin": "Puranas",
+    "namesByLanguage": { "hi": "पुराण", "sa": "पुराणानि", "en": "Puranas" },
+    "description": "Ancient texts narrating the history of the universe, genealogies of gods, and stories of kings and sages.",
+    "order": 3
+  },
+  {
+    "id": "epics",
+    "name": "महाकाव्य",
+    "nameLatin": "Epics",
+    "namesByLanguage": { "hi": "महाकाव्य", "sa": "महाकाव्यानि", "en": "Epics" },
+    "description": "The great narrative poems — Ramayana and Mahabharata — that form the foundation of Hindu culture.",
+    "order": 4
+  },
+  {
+    "id": "gitas",
+    "name": "गीता",
+    "nameLatin": "Gitas",
+    "namesByLanguage": { "hi": "गीता", "sa": "गीताः", "en": "Gitas" },
+    "description": "Sacred songs and dialogues conveying spiritual wisdom, including the Bhagavad Gita.",
+    "order": 5
+  },
+  {
+    "id": "stotras",
+    "name": "स्तोत्र",
+    "nameLatin": "Stotras",
+    "namesByLanguage": { "hi": "स्तोत्र", "sa": "स्तोत्राणि", "en": "Stotras" },
+    "description": "Hymns of praise and devotion composed by saints and sages to various deities.",
+    "order": 6
+  },
+  {
+    "id": "smritis",
+    "name": "स्मृति",
+    "nameLatin": "Smritis",
+    "namesByLanguage": { "hi": "स्मृति", "sa": "स्मृतयः", "en": "Smritis" },
+    "description": "Texts based on remembered tradition, including law codes and ethical guidelines.",
+    "order": 7
+  },
+  {
+    "id": "sutras",
+    "name": "सूत्र",
+    "nameLatin": "Sutras",
+    "namesByLanguage": { "hi": "सूत्र", "sa": "सूत्राणि", "en": "Sutras" },
+    "description": "Aphoristic texts distilling complex philosophical teachings into concise formulas.",
+    "order": 8
+  },
+  {
+    "id": "tantras",
+    "name": "तन्त्र",
+    "nameLatin": "Tantras",
+    "namesByLanguage": { "hi": "तन्त्र", "sa": "तन्त्राणि", "en": "Tantras" },
+    "description": "Esoteric texts containing rituals, meditation practices, and philosophical teachings.",
+    "order": 9
+  },
+  {
+    "id": "agamas",
+    "name": "आगम",
+    "nameLatin": "Agamas",
+    "namesByLanguage": { "hi": "आगम", "sa": "आगमाः", "en": "Agamas" },
+    "description": "Texts prescribing temple rituals, yoga practices, and philosophical doctrines.",
+    "order": 10
+  },
+  {
+    "id": "aartis",
+    "name": "आरती",
+    "nameLatin": "Aartis",
+    "namesByLanguage": { "hi": "आरती", "mr": "आरती", "sa": "आरात्रिकम्", "en": "Aartis" },
+    "description": "Devotional songs sung during the ritual of waving a lamp before a deity, expressing love and gratitude.",
+    "order": 11
+  },
+  {
+    "id": "abhangas",
+    "name": "अभंग",
+    "nameLatin": "Abhangas",
+    "namesByLanguage": { "hi": "अभंग", "mr": "अभंग", "en": "Abhangas" },
+    "description": "Devotional poetry in Marathi composed by the Varkari saints of Maharashtra, expressing longing for Vitthal.",
+    "order": 12
+  },
+  {
+    "id": "dohas",
+    "name": "दोहा",
+    "nameLatin": "Dohas",
+    "namesByLanguage": { "hi": "दोहा", "mr": "दोहा", "en": "Dohas" },
+    "description": "Couplets of spiritual wisdom and moral teachings composed by saints like Kabir and Ramdas.",
+    "order": 13
+  },
+  {
+    "id": "sant-sahitya",
+    "name": "संत साहित्य",
+    "nameLatin": "Sant Sahitya",
+    "namesByLanguage": { "hi": "संत साहित्य", "mr": "संत साहित्य", "en": "Sant Literature" },
+    "description": "Literature of the Bhakti movement saints of Maharashtra, including the teachings and compositions of the Varkari and other traditions.",
+    "order": 14
+  }
+]

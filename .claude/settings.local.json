@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx astro:*)",
+      "Bash(kill %1)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(find /Users/manojpawar/sahityaa/dist -name *.html)",
+      "Bash(ls /Users/manojpawar/sahityaa/dist/sitemap*)"
+    ]
+  }
+}

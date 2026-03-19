@@ -1,0 +1,28 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <Header />
+  <main class="browse-main container">
+    <slot />
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .browse-main {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+    min-height: calc(100vh - 10rem);
+  }
+</style>

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "shaiva",
+    "name": "शैव",
+    "nameLatin": "Shaiva",
+    "namesByLanguage": { "hi": "शैव", "sa": "शैवम्", "en": "Shaiva" },
+    "description": "Tradition centered on Lord Shiva as the Supreme Being.",
+    "primaryDeity": "Shiva"
+  },
+  {
+    "id": "vaishnava",
+    "name": "वैष्णव",
+    "nameLatin": "Vaishnava",
+    "namesByLanguage": { "hi": "वैष्णव", "sa": "वैष्णवम्", "en": "Vaishnava" },
+    "description": "Tradition centered on Lord Vishnu and his avatars as the Supreme Being.",
+    "primaryDeity": "Vishnu"
+  },
+  {
+    "id": "shakta",
+    "name": "शाक्त",
+    "nameLatin": "Shakta",
+    "namesByLanguage": { "hi": "शाक्त", "sa": "शाक्तम्", "en": "Shakta" },
+    "description": "Tradition centered on Devi (the Goddess) as the Supreme Power.",
+    "primaryDeity": "Devi"
+  },
+  {
+    "id": "smarta",
+    "name": "स्मार्त",
+    "nameLatin": "Smarta",
+    "namesByLanguage": { "hi": "स्मार्त", "sa": "स्मार्तम्", "en": "Smarta" },
+    "description": "Liberal tradition following the Smriti texts, worshipping five deities equally.",
+    "primaryDeity": "Panchayatana"
+  },
+  {
+    "id": "saura",
+    "name": "सौर",
+    "nameLatin": "Saura",
+    "namesByLanguage": { "hi": "सौर", "sa": "सौरम्", "en": "Saura" },
+    "description": "Tradition centered on Surya (the Sun God) as the Supreme Being.",
+    "primaryDeity": "Surya"
+  },
+  {
+    "id": "ganapatya",
+    "name": "गाणपत्य",
+    "nameLatin": "Ganapatya",
+    "namesByLanguage": { "hi": "गाणपत्य", "sa": "गाणपत्यम्", "en": "Ganapatya" },
+    "description": "Tradition centered on Ganesha as the Supreme Being.",
+    "primaryDeity": "Ganesha"
+  },
+  {
+    "id": "common",
+    "name": "सर्वसाधारण",
+    "nameLatin": "Common",
+    "namesByLanguage": { "hi": "सर्वसाधारण", "en": "Common" },
+    "description": "Texts that are revered across all traditions and panths."
+  },
+  {
+    "id": "varkari",
+    "name": "वारकरी",
+    "nameLatin": "Varkari",
+    "namesByLanguage": { "hi": "वारकरी", "mr": "वारकरी", "en": "Varkari" },
+    "description": "Devotional tradition of Maharashtra centered on worship of Vitthal (Vishnu) at Pandharpur, founded by saints like Dnyaneshwar and Tukaram.",
+    "primaryDeity": "Vitthal"
+  }
+]

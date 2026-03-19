@@ -1,0 +1,284 @@
+/* === Book-Like Reading Page Styles === */
+
+.book-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 2.5rem;
+  background: var(--color-bg-card);
+  box-shadow:
+    0 1px 3px var(--color-page-shadow),
+    0 8px 24px var(--color-page-shadow);
+  border-radius: 2px;
+  min-height: calc(100vh - 8rem);
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .book-page {
+    margin: 2rem auto;
+    border: 1px solid var(--color-border-light);
+  }
+}
+
+/* Scripture header */
+.scripture-header {
+  text-align: center;
+  padding-bottom: 1.5em;
+  margin-bottom: 2em;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.scripture-title {
+  font-family: var(--font-reading);
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.2em;
+}
+
+.scripture-subtitle {
+  font-size: 1em;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.scripture-meta {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1em;
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+}
+
+.scripture-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+/* Chapter navigation */
+.chapter-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5em 0;
+  margin-top: 2em;
+  border-top: 1px solid var(--color-border-light);
+  gap: 1em;
+}
+
+.chapter-nav a,
+.chapter-nav span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.6em 1.2em;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.chapter-nav a {
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+
+.chapter-nav a:hover {
+  background: var(--color-accent-light);
+  text-decoration: none;
+  border-color: var(--color-accent);
+}
+
+.chapter-nav .chapter-indicator {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.chapter-nav .disabled {
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-light);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Reading progress bar */
+.reading-progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--color-progress-bg);
+  z-index: 100;
+}
+
+.reading-progress-bar {
+  height: 100%;
+  background: var(--color-progress-fill);
+  transition: width 0.15s ease-out;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Reading toolbar */
+.reading-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-header-bg);
+  border-bottom: 1px solid var(--color-header-border);
+  padding: 0.6rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(8px);
+}
+
+.reading-toolbar .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--color-text-secondary);
+  font-size: 0.9em;
+}
+
+.reading-toolbar .back-link:hover {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.toolbar-btn {
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  position: relative;
+}
+
+.toolbar-btn:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.toolbar-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.toolbar-btn.active {
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+/* Separator between font controls and action buttons */
+#read-later-toggle {
+  margin-left: 0.3rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid var(--color-border-light);
+}
+
+/* Table of Contents in sidebar */
+.toc-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 100vh;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border);
+  padding: 1.5rem;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 200;
+}
+
+.toc-sidebar.open {
+  transform: translateX(0);
+}
+
+.toc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 199;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.toc-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (min-width: 1100px) {
+  .toc-sidebar {
+    transform: translateX(0);
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+  }
+
+  .toc-overlay {
+    display: none;
+  }
+
+  .reading-layout-with-toc {
+    display: flex;
+  }
+
+  .reading-main {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.toc-title {
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  margin-bottom: 1em;
+  font-weight: 600;
+}
+
+.toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+.toc-item {
+  display: block;
+  padding: 0.5em 0.8em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.toc-item:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.toc-item.active {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  font-weight: 500;
+}

@@ -1,0 +1,220 @@
+---
+import BrowseLayout from '../layouts/BrowseLayout.astro';
+import TextCard from '../components/cards/TextCard.astro';
+import CategoryCard from '../components/cards/CategoryCard.astro';
+import { getScriptureIndex } from '../utils/content-helpers';
+import { getCollection } from 'astro:content';
+
+const scriptures = await getScriptureIndex();
+const categories = await getCollection('categories');
+const base = import.meta.env.BASE_URL;
+
+// Sort categories by order
+const sortedCategories = categories.sort((a, b) => (a.data.order || 99) - (b.data.order || 99));
+
+// Count texts per category
+const categoryCounts = new Map<string, number>();
+for (const s of scriptures) {
+  categoryCounts.set(s.category, (categoryCounts.get(s.category) || 0) + 1);
+}
+---
+
+<BrowseLayout title="Home" description="Explore Hindu Pauranik Sahitya - Sacred scriptures in multiple Indian languages">
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <span class="hero-om">ॐ</span>
+        Sahityaa
+      </h1>
+      <p class="hero-subtitle">Hindu Pauranik Sahitya</p>
+      <p class="hero-description">
+        Explore sacred scriptures from the Vedas, Upanishads, Puranas, and more
+        in Sanskrit, Hindi, and other Indian languages. Read with a beautiful,
+        book-like experience.
+      </p>
+      <div class="hero-actions">
+        <a href={`${base}browse/`} class="btn btn-primary">Browse All Texts</a>
+        <a href={`${base}search/`} class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.3em"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories Grid -->
+  <section class="section">
+    <h2 class="section-title">Explore by Category</h2>
+    <div class="categories-grid">
+      {sortedCategories.map(cat => (
+        <CategoryCard
+          id={cat.id}
+          name={cat.data.name}
+          nameLatin={cat.data.nameLatin}
+          description={cat.data.description}
+          count={categoryCounts.get(cat.id) || 0}
+        />
+      ))}
+    </div>
+  </section>
+
+  <!-- Featured / All Texts -->
+  <section class="section">
+    <div class="section-header">
+      <h2 class="section-title">Available Texts</h2>
+      <a href={`${base}browse/`} class="view-all">View all &rarr;</a>
+    </div>
+    <div class="texts-grid">
+      {scriptures.map(s => (
+        <TextCard
+          id={s.id}
+          firstTextId={s.firstTextId}
+          titleLatin={s.titleLatin}
+          titles={s.titles}
+          category={s.category}
+          author={s.author}
+          languages={s.languages}
+          description={s.description}
+          panth={s.panth}
+        />
+      ))}
+    </div>
+  </section>
+</BrowseLayout>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .hero-title {
+    font-family: var(--font-reading);
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3em;
+  }
+
+  .hero-om {
+    color: var(--color-accent);
+    font-size: 1.2em;
+  }
+
+  .hero-subtitle {
+    font-family: var(--font-reading);
+    font-size: 1.2rem;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+
+  .hero-description {
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+    color: var(--color-text-secondary);
+    line-height: 1.7;
+    font-size: 1rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.7em 1.5em;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+    text-decoration: none;
+  }
+
+  .btn-secondary {
+    border: 1.5px solid var(--color-btn-secondary-border);
+    color: var(--color-btn-secondary-text);
+    background: var(--color-btn-secondary-bg);
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-accent-light);
+    text-decoration: none;
+  }
+
+  .section {
+    margin-bottom: 3rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+  }
+
+  .section-title {
+    font-family: var(--font-reading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 1.2rem;
+  }
+
+  .section-header .section-title {
+    margin-bottom: 0;
+  }
+
+  .view-all {
+    font-size: 0.9rem;
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .texts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.2rem;
+  }
+
+  @media (max-width: 640px) {
+    .hero-title {
+      font-size: 2rem;
+    }
+
+    .categories-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .texts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

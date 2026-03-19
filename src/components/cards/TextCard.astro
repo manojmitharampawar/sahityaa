@@ -1,0 +1,162 @@
+---
+import { LANGUAGE_NAMES } from '../../utils/content-helpers';
+
+interface Props {
+  id: string;
+  firstTextId: string;
+  titleLatin: string;
+  titles: Record<string, string>;
+  category: string;
+  author: string;
+  languages: string[];
+  description?: string;
+  panth: string;
+}
+
+const { id, firstTextId, titleLatin, titles, category, author, languages, description, panth } = Astro.props;
+const base = import.meta.env.BASE_URL;
+
+// Get the first available native title
+const nativeTitle = titles['sa'] || titles['hi'] || Object.values(titles)[0] || titleLatin;
+const readUrl = `${base}read/${firstTextId}/`;
+---
+
+<a href={readUrl} class="text-card" data-scripture-id={id}>
+  <div class="card-top-row">
+    <div class="card-category-badge">{category}</div>
+    <div class="card-languages">
+      {languages.map(lang => (
+        <span class="lang-badge">{LANGUAGE_NAMES[lang] || lang}</span>
+      ))}
+    </div>
+  </div>
+  <h3 class="card-title-native">{nativeTitle}</h3>
+  <p class="card-title-latin">{titleLatin}</p>
+  {description && <p class="card-description">{description.slice(0, 120)}{description.length > 120 ? '...' : ''}</p>}
+  <div class="card-footer">
+    <div class="card-meta">
+      <span class="card-author">{author}</span>
+      {panth !== 'common' && <span class="card-panth">{panth}</span>}
+    </div>
+    <span class="card-read-cta">Read &rarr;</span>
+  </div>
+</a>
+
+<style>
+  .text-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .text-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 4px 16px var(--color-shadow);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .card-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+
+  .card-category-badge {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.25em 0.7em;
+    background: var(--color-tag-bg);
+    color: var(--color-tag-text);
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .card-title-native {
+    font-family: var(--font-reading);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.15rem;
+    line-height: 1.4;
+  }
+
+  .card-title-latin {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.6rem;
+    font-style: italic;
+  }
+
+  .card-description {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    margin-bottom: 0.8rem;
+    flex: 1;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 0.8em;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+  }
+
+  .card-meta span::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background: var(--color-accent);
+    border-radius: 50%;
+    margin-right: 0.4em;
+    vertical-align: middle;
+  }
+
+  .card-read-cta {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .text-card:hover .card-read-cta {
+    opacity: 1;
+  }
+
+  .card-languages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .lang-badge {
+    font-size: 0.65rem;
+    padding: 0.15em 0.45em;
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+    border-radius: 3px;
+    font-weight: 500;
+  }
+</style>

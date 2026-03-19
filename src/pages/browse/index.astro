@@ -1,0 +1,174 @@
+---
+import BrowseLayout from '../../layouts/BrowseLayout.astro';
+import TextCard from '../../components/cards/TextCard.astro';
+import Breadcrumbs from '../../components/common/Breadcrumbs.astro';
+import { getScriptureIndex, LANGUAGE_NAMES, RELIGION_NAMES } from '../../utils/content-helpers';
+import { getCollection } from 'astro:content';
+
+const scriptures = await getScriptureIndex();
+const categories = await getCollection('categories');
+const authors = await getCollection('authors');
+const panths = await getCollection('panths');
+const base = import.meta.env.BASE_URL;
+---
+
+<BrowseLayout title="Browse All Texts" description="Browse all available sacred scriptures">
+  <Breadcrumbs items={[
+    { label: 'Home', href: base },
+    { label: 'Browse' },
+  ]} />
+
+  <h1 class="page-title">Browse Sahitya</h1>
+
+  <!-- Filter links -->
+  <div class="filter-section">
+    <div class="filter-group">
+      <h3 class="filter-label">By Category</h3>
+      <div class="filter-tags">
+        {categories.sort((a, b) => (a.data.order || 99) - (b.data.order || 99)).map(cat => (
+          <a href={`${base}browse/category/${cat.id}/`} class="filter-tag">{cat.data.nameLatin}</a>
+        ))}
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3 class="filter-label">By Author</h3>
+      <div class="filter-tags">
+        {authors.map(a => (
+          <a href={`${base}browse/author/${a.id}/`} class="filter-tag">{a.data.nameLatin}</a>
+        ))}
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3 class="filter-label">By Panth</h3>
+      <div class="filter-tags">
+        {panths.map(p => (
+          <a href={`${base}browse/panth/${p.id}/`} class="filter-tag">{p.data.nameLatin}</a>
+        ))}
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3 class="filter-label">By Religion</h3>
+      <div class="filter-tags">
+        {Object.entries(RELIGION_NAMES).map(([id, name]) => (
+          <a href={`${base}browse/religion/${id}/`} class="filter-tag">{name}</a>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- All texts -->
+  <section class="texts-section">
+    <h2 class="section-subtitle">All Texts ({scriptures.length})</h2>
+    <div class="texts-grid">
+      {scriptures.map(s => (
+        <TextCard
+          id={s.id}
+          firstTextId={s.firstTextId}
+          titleLatin={s.titleLatin}
+          titles={s.titles}
+          category={s.category}
+          author={s.author}
+          languages={s.languages}
+          description={s.description}
+          panth={s.panth}
+        />
+      ))}
+    </div>
+  </section>
+</BrowseLayout>
+
+<style>
+  .page-title {
+    font-family: var(--font-reading);
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-section {
+    margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    background: var(--color-bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--color-border-light);
+    overflow: hidden;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .filter-group:last-child {
+    border-bottom: none;
+  }
+
+  .filter-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+    font-weight: 700;
+    min-width: 100px;
+    padding-top: 0.3em;
+  }
+
+  .filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    flex: 1;
+  }
+
+  .filter-tag {
+    font-size: 0.84rem;
+    padding: 0.3em 0.8em;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+  }
+
+  .filter-tag:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    text-decoration: none;
+  }
+
+  .texts-section {
+    margin-top: 1rem;
+  }
+
+  .section-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--color-text-secondary);
+  }
+
+  .texts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.2rem;
+  }
+
+  @media (max-width: 640px) {
+    .filter-group {
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .texts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
