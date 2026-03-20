@@ -61,73 +61,118 @@ export async function getTextsByReligion(religion: string) {
   return texts.filter(t => t.data.religion === religion);
 }
 
-/** Get unique scriptures with their available languages */
-export async function getScriptureIndex() {
+export interface ScriptureEntry {
+  id: string;
+  firstTextId: string;
+  titleLatin: string;
+  titles: Record<string, string>;
+  category: string;
+  author: string;
+  panth: string;
+  religion: string;
+  languages: string[];
+  description?: string;
+  tags: string[];
+  totalChapters?: number;
+  hasChapters: boolean;
+  /** For chapter entries: the chapter number */
+  chapterNumber?: number;
+  /** For chapter entries: the chapter title */
+  chapterTitle?: string;
+}
+
+/** Get unique scriptures with their available languages.
+ *  Multi-chapter texts produce one entry per chapter. */
+export async function getScriptureIndex(): Promise<ScriptureEntry[]> {
   const texts = await getAllTexts();
-  const scriptureMap = new Map<string, {
-    id: string;
-    firstTextId: string;
-    titleLatin: string;
-    titles: Record<string, string>;
-    category: string;
-    author: string;
-    panth: string;
-    religion: string;
-    languages: string[];
-    description?: string;
-    tags: string[];
-    totalChapters?: number;
-    hasChapters: boolean;
-  }>();
 
-  // Track the best (lowest chapter) text per scripture for the firstTextId
-  const bestChapter = new Map<string, { slug: string; chapter: number }>();
-
+  // Group texts by scripture
+  const byScripture = new Map<string, typeof texts>();
   for (const text of texts) {
-    const d = text.data;
-    const slug = getChapterSlug(text.id);
-    const ch = d.chapterNumber ?? 0;
+    const s = text.data.scripture;
+    if (!byScripture.has(s)) byScripture.set(s, []);
+    byScripture.get(s)!.push(text);
+  }
 
-    // Track best chapter slug per scripture
-    const existing = bestChapter.get(d.scripture);
-    if (!existing || ch < existing.chapter) {
-      bestChapter.set(d.scripture, { slug, chapter: ch });
+  const results: ScriptureEntry[] = [];
+
+  for (const [scripture, group] of byScripture) {
+    const hasChapters = group.some(t => t.data.chapterNumber !== undefined);
+
+    // Collect unique languages and titles across all versions
+    const languages: string[] = [];
+    const titles: Record<string, string> = {};
+    for (const t of group) {
+      if (!languages.includes(t.data.language)) languages.push(t.data.language);
+      titles[t.data.language] = t.data.title;
     }
 
-    const entry = scriptureMap.get(d.scripture);
-    if (entry) {
-      if (!entry.languages.includes(d.language)) {
-        entry.languages.push(d.language);
-      }
-      entry.titles[d.language] = d.title;
-    } else {
-      scriptureMap.set(d.scripture, {
-        id: d.scripture,
-        firstTextId: slug, // Will be updated below
-        titleLatin: d.titleLatin.split(' - ')[0],
-        titles: { [d.language]: d.title },
-        category: d.category,
-        author: d.author,
-        panth: d.panth,
-        religion: d.religion,
-        languages: [d.language],
-        description: d.description,
-        tags: d.tags || [],
-        totalChapters: d.totalChapters,
-        hasChapters: d.chapterNumber !== undefined,
+    const sample = group[0].data;
+
+    if (!hasChapters) {
+      // Single-entry scripture (aartis, abhangas, etc.)
+      const slug = getChapterSlug(group[0].id);
+      results.push({
+        id: scripture,
+        firstTextId: slug,
+        titleLatin: sample.titleLatin.split(' - ')[0],
+        titles,
+        category: sample.category,
+        author: sample.author,
+        panth: sample.panth,
+        religion: sample.religion,
+        languages,
+        description: sample.description,
+        tags: sample.tags || [],
+        hasChapters: false,
       });
+    } else {
+      // Multi-chapter: one entry per chapter
+      // Group by chapter number to deduplicate language versions
+      const byChapter = new Map<number, typeof texts>();
+      for (const t of group) {
+        const ch = t.data.chapterNumber;
+        if (ch === undefined) continue;
+        if (!byChapter.has(ch)) byChapter.set(ch, []);
+        byChapter.get(ch)!.push(t);
+      }
+
+      const sortedChapters = Array.from(byChapter.entries()).sort((a, b) => a[0] - b[0]);
+
+      for (const [chNum, chTexts] of sortedChapters) {
+        const chLangs: string[] = [];
+        const chTitles: Record<string, string> = {};
+        for (const t of chTexts) {
+          if (!chLangs.includes(t.data.language)) chLangs.push(t.data.language);
+          chTitles[t.data.language] = t.data.title;
+        }
+        const chSample = chTexts[0].data;
+        const chSlug = getChapterSlug(chTexts[0].id);
+        const chapterLabel = chSample.chapterTitle || `Chapter ${chNum}`;
+        const scriptureName = chSample.titleLatin.split(' - ')[0];
+
+        results.push({
+          id: `${scripture}/chapter-${String(chNum).padStart(2, '0')}`,
+          firstTextId: chSlug,
+          titleLatin: `${scriptureName} - ${chapterLabel}`,
+          titles: chTitles,
+          category: chSample.category,
+          author: chSample.author,
+          panth: chSample.panth,
+          religion: chSample.religion,
+          languages: chLangs,
+          description: chSample.description,
+          tags: chSample.tags || [],
+          totalChapters: chSample.totalChapters,
+          hasChapters: true,
+          chapterNumber: chNum,
+          chapterTitle: chapterLabel,
+        });
+      }
     }
   }
 
-  // Set firstTextId to the chapter slug (without language suffix)
-  for (const [scripture, entry] of scriptureMap) {
-    const best = bestChapter.get(scripture);
-    if (best) {
-      entry.firstTextId = best.slug;
-    }
-  }
-
-  return Array.from(scriptureMap.values());
+  return results;
 }
 
 /** Get chapters for a scripture */
