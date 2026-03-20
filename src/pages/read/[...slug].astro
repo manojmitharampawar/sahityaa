@@ -221,9 +221,7 @@ const jsonLd = {
   </article>
 </ReadingLayout>
 
-<style>
-  @import '../../styles/reading.css';
-
+<style is:global>
   /* Language badges in header */
   .scripture-languages {
     display: flex;
@@ -283,50 +281,59 @@ const jsonLd = {
   }
 
   .verse-original {
-    margin-bottom: 1rem;
-    padding: 1rem 1.2rem;
+    margin-bottom: 1.2rem;
+    padding: 1.2rem 1.4rem 1rem;
     background: var(--color-accent-light);
-    border-radius: 8px;
-    border-left: 3px solid var(--color-accent);
+    border-radius: 10px;
+    border-left: 4px solid var(--color-accent);
   }
 
   .verse-original .verse-text {
     font-family: var(--font-reading);
-    font-size: 1.1em;
-    line-height: 1.9;
+    font-size: 1.15em;
+    line-height: 2;
     color: var(--color-text);
+    font-weight: 500;
   }
 
   .verse-translation {
     margin-bottom: 0.75rem;
-    padding: 0.8rem 1.2rem;
+    padding: 1rem 1.4rem 0.8rem;
     background: var(--color-bg-secondary, #fafafa);
-    border-radius: 8px;
-    border-left: 3px solid var(--color-border);
+    border-radius: 10px;
+    border-left: 4px solid var(--color-border);
   }
 
   .verse-translation .verse-text {
-    font-size: 1em;
-    line-height: 1.8;
+    font-size: 1.02em;
+    line-height: 1.85;
     color: var(--color-text-secondary);
   }
 
   .verse-lang-label {
     display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.58rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     color: var(--color-text-muted);
-    margin-bottom: 0.4rem;
-    padding: 0.15em 0.5em;
-    background: var(--color-bg);
-    border-radius: 4px;
+    margin-bottom: 0.6rem;
+    padding: 0.25em 0.7em;
+    background: var(--color-border-light);
+    border-radius: 3px;
+    border: 1px solid var(--color-border);
   }
 
   .verse-original .verse-lang-label {
-    color: var(--color-accent);
-    background: var(--color-bg);
+    color: #fff;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .verse-translation .verse-lang-label {
+    color: var(--color-text-muted);
+    background: var(--color-border-light);
+    border-color: var(--color-border);
   }
 
   .verse-preamble {
