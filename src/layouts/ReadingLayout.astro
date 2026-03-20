@@ -85,7 +85,7 @@ const base = import.meta.env.BASE_URL;
           <div class="translation-dropdown" id="translation-dropdown">
             {translationLanguages.map(langCode => (
               <label class="translation-option" data-lang={langCode}>
-                <input type="checkbox" checked data-translation-toggle={langCode} />
+                <input type="checkbox" data-translation-toggle={langCode} />
                 <span>{LANGUAGE_NATIVE_NAMES[langCode] || langCode}</span>
               </label>
             ))}

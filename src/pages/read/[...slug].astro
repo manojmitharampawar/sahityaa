@@ -91,7 +91,7 @@ if (originalParsed.hasVerseStructure) {
     // Translations
     const translations = translationVerseMap.get(verse.number) || [];
     for (const t of translations) {
-      parts.push(`<div class="verse-translation" lang="${t.language}" data-translation-lang="${t.language}">`);
+      parts.push(`<div class="verse-translation hidden" lang="${t.language}" data-translation-lang="${t.language}">`);
       parts.push(`<span class="verse-lang-label">${LANGUAGE_NATIVE_NAMES[t.language] || t.language}</span>`);
       parts.push(`<div class="verse-text">${renderVerseHtml(t.body)}</div>`);
       parts.push(`</div>`);
@@ -202,7 +202,7 @@ const jsonLd = {
     ) : (
       <div class="reading-content sequential-content">
         {renderedVersions.map(({ language, title, Content }) => (
-          <div class="language-section" data-lang={language}>
+          <div class={`language-section${language !== originalLang ? ' hidden' : ''}`} data-lang={language}>
             {renderedVersions.length > 1 && (
               <div class="language-section-header">
                 <span class="lang-section-label">{LANGUAGE_NATIVE_NAMES[language] || language}</span>
