@@ -1,4 +1,5 @@
 import { getCollection } from 'astro:content';
+import { getChapterSlug } from './verse-parser';
 
 export const LANGUAGE_NAMES: Record<string, string> = {
   sa: 'Sanskrit',
@@ -77,52 +78,33 @@ export async function getScriptureIndex() {
     tags: string[];
     totalChapters?: number;
     hasChapters: boolean;
-    langUrls: Record<string, string>;
   }>();
 
-  // First pass: collect all texts per scripture per language, pick best (chapter 1)
-  const langBest = new Map<string, Map<string, { id: string; chapter: number }>>();
+  // Track the best (lowest chapter) text per scripture for the firstTextId
+  const bestChapter = new Map<string, { slug: string; chapter: number }>();
 
   for (const text of texts) {
     const d = text.data;
-    const key = d.scripture;
-    if (!langBest.has(key)) langBest.set(key, new Map());
-    const byLang = langBest.get(key)!;
+    const slug = getChapterSlug(text.id);
     const ch = d.chapterNumber ?? 0;
-    const existing = byLang.get(d.language);
+
+    // Track best chapter slug per scripture
+    const existing = bestChapter.get(d.scripture);
     if (!existing || ch < existing.chapter) {
-      byLang.set(d.language, { id: text.id, chapter: ch });
-    }
-  }
-
-  for (const text of texts) {
-    const d = text.data;
-    const existing = scriptureMap.get(d.scripture);
-    const byLang = langBest.get(d.scripture)!;
-    const langUrls: Record<string, string> = {};
-    for (const [lang, best] of byLang) {
-      langUrls[lang] = best.id;
+      bestChapter.set(d.scripture, { slug, chapter: ch });
     }
 
-    if (existing) {
-      if (!existing.languages.includes(d.language)) {
-        existing.languages.push(d.language);
+    const entry = scriptureMap.get(d.scripture);
+    if (entry) {
+      if (!entry.languages.includes(d.language)) {
+        entry.languages.push(d.language);
       }
-      existing.titles[d.language] = d.title;
-      existing.langUrls = langUrls;
-      // Prefer chapter 1 (or lowest chapter), and prefer sa > hi > first found
-      const existingChapter = _extractChapterFromId(existing.firstTextId);
-      const thisChapter = d.chapterNumber ?? 0;
-      const isBetterChapter = thisChapter < existingChapter ||
-        (thisChapter === existingChapter && _langPriority(d.language) < _langPriority(_extractLangFromId(existing.firstTextId)));
-      if (isBetterChapter) {
-        existing.firstTextId = text.id;
-      }
+      entry.titles[d.language] = d.title;
     } else {
       scriptureMap.set(d.scripture, {
         id: d.scripture,
-        firstTextId: text.id,
-        titleLatin: d.titleLatin.split(' - ')[0], // Remove chapter info
+        firstTextId: slug, // Will be updated below
+        titleLatin: d.titleLatin.split(' - ')[0],
         titles: { [d.language]: d.title },
         category: d.category,
         author: d.author,
@@ -133,28 +115,19 @@ export async function getScriptureIndex() {
         tags: d.tags || [],
         totalChapters: d.totalChapters,
         hasChapters: d.chapterNumber !== undefined,
-        langUrls,
       });
     }
   }
 
+  // Set firstTextId to the chapter slug (without language suffix)
+  for (const [scripture, entry] of scriptureMap) {
+    const best = bestChapter.get(scripture);
+    if (best) {
+      entry.firstTextId = best.slug;
+    }
+  }
+
   return Array.from(scriptureMap.values());
-}
-
-function _langPriority(lang: string): number {
-  const order: Record<string, number> = { sa: 0, hi: 1, mr: 2, en: 3 };
-  return order[lang] ?? 9;
-}
-
-function _extractChapterFromId(id: string): number {
-  const match = id.match(/chapter-(\d+)/);
-  return match ? parseInt(match[1]) : 0;
-}
-
-function _extractLangFromId(id: string): string {
-  const parts = id.split('/');
-  const last = parts[parts.length - 1];
-  return last.replace('.md', '').replace('.mdx', '') || 'sa';
 }
 
 /** Get chapters for a scripture */

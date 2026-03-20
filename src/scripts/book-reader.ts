@@ -70,27 +70,68 @@ export class BookReader {
     const children = Array.from(this.contentEl.children) as HTMLElement[];
     if (children.length === 0) return;
 
-    // Identify heading elements that act as section boundaries
+    // Identify section boundaries: heading tags OR verse-block elements
     const headingTags = new Set(['H2', 'H3', 'H4']);
 
-    // Group content by heading boundaries
+    // Check if content uses verse-block structure (interleaved mode)
+    const hasVerseBlocks = children.some(el => el.classList.contains('verse-block'));
+
     const groups: { heading?: HTMLElement; elements: HTMLElement[] }[] = [];
     let currentGroup: { heading?: HTMLElement; elements: HTMLElement[] } = { elements: [] };
 
-    for (const el of children) {
-      if (headingTags.has(el.tagName)) {
-        // Dividers right before a heading belong to the previous group
-        if (currentGroup.elements.length > 0 || currentGroup.heading) {
-          groups.push(currentGroup);
+    if (hasVerseBlocks) {
+      // Verse-block mode: each .verse-block is one group, other elements are preamble/epilogue
+      for (const el of children) {
+        if (el.classList.contains('verse-block')) {
+          // Push any accumulated non-verse content first
+          if (currentGroup.elements.length > 0) {
+            groups.push(currentGroup);
+            currentGroup = { elements: [] };
+          }
+          // Each verse-block is its own group — heading is already inside the element
+          if (!el.classList.contains('hidden')) {
+            // Extract heading text for TOC but don't set heading element (it's inside the block)
+            const headingEl = el.querySelector('.verse-heading') as HTMLElement | null;
+            const fakeGroup = { elements: [el] } as { heading?: HTMLElement; elements: HTMLElement[] };
+            // Store heading text via a data attribute for TOC extraction later
+            if (headingEl) {
+              el.dataset.tocHeading = headingEl.textContent?.trim() || '';
+            }
+            groups.push(fakeGroup);
+          }
+        } else {
+          currentGroup.elements.push(el);
         }
-        currentGroup = { heading: el, elements: [] };
-      } else {
-        currentGroup.elements.push(el);
+      }
+      if (currentGroup.elements.length > 0) {
+        groups.push(currentGroup);
+      }
+    } else {
+      // Classic mode: group by heading boundaries
+      for (const el of children) {
+        if (headingTags.has(el.tagName)) {
+          if (currentGroup.elements.length > 0 || currentGroup.heading) {
+            groups.push(currentGroup);
+          }
+          currentGroup = { heading: el, elements: [] };
+        } else {
+          currentGroup.elements.push(el);
+        }
+      }
+      if (currentGroup.elements.length > 0 || currentGroup.heading) {
+        groups.push(currentGroup);
       }
     }
-    // Push the last group
-    if (currentGroup.elements.length > 0 || currentGroup.heading) {
-      groups.push(currentGroup);
+
+    // Helper to extract heading text from a group (works for both classic and verse-block modes)
+    function getGroupHeadingText(g: { heading?: HTMLElement; elements: HTMLElement[] }): string | undefined {
+      if (g.heading) return g.heading.textContent?.trim();
+      // For verse-blocks, heading text is stored in data attribute
+      for (const el of g.elements) {
+        const tocH = el.dataset?.tocHeading;
+        if (tocH) return tocH;
+      }
+      return undefined;
     }
 
     // If only a few groups, put everything on one page
@@ -102,6 +143,7 @@ export class BookReader {
           if (!headingText) headingText = g.heading.textContent?.trim();
           allElements.push(g.heading);
         }
+        if (!headingText) headingText = getGroupHeadingText(g);
         allElements.push(...g.elements);
       }
       this.pages = [{ index: 0, elements: allElements, headingText }];
@@ -126,6 +168,12 @@ export class BookReader {
             lastHeading = text;
           }
           elements.push(g.heading);
+        }
+        // Also check for verse-block heading text
+        const tocText = getGroupHeadingText(g);
+        if (tocText && !g.heading) {
+          if (!firstHeading) firstHeading = tocText;
+          lastHeading = tocText;
         }
         elements.push(...g.elements);
       }
@@ -302,6 +350,17 @@ export class BookReader {
         }
       }
     }, { passive: true });
+  }
+
+  /** Rebuild pages (e.g., after toggling translations) */
+  rebuild() {
+    if (!this.contentEl || !this.pageEl) return;
+    this.pages = [];
+    this.buildPages();
+    if (this.pages.length === 0) return;
+    const targetPage = Math.min(this.currentPage, this.pages.length - 1);
+    this.renderPage(targetPage, 'none');
+    this.opts.onPageChange?.(targetPage, this.pages.length);
   }
 
   /** Destroy and cleanup */

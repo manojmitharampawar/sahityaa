@@ -1,103 +1,235 @@
 ---
 import { getCollection, render } from 'astro:content';
 import ReadingLayout from '../../layouts/ReadingLayout.astro';
-import { LANGUAGE_NAMES, getTextsByScripture, getChapters } from '../../utils/content-helpers';
+import { LANGUAGE_NAMES, LANGUAGE_NATIVE_NAMES } from '../../utils/content-helpers';
+import { parseVerses, renderVerseHtml, getOriginalLanguage, getChapterSlug } from '../../utils/verse-parser';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export async function getStaticPaths() {
   const texts = await getCollection('texts');
-  return texts.map(text => ({
-    params: { slug: text.id },
-    props: { text },
+
+  // Group texts by chapter slug (id without language suffix)
+  const groups = new Map<string, typeof texts>();
+  for (const text of texts) {
+    const slug = getChapterSlug(text.id);
+    if (!groups.has(slug)) groups.set(slug, []);
+    groups.get(slug)!.push(text);
+  }
+
+  return Array.from(groups.entries()).map(([slug, versions]) => ({
+    params: { slug },
+    props: { versions },
   }));
 }
 
-const { text } = Astro.props;
-const { Content } = await render(text);
-const data = text.data;
+const { versions } = Astro.props;
 const base = import.meta.env.BASE_URL;
 
-// JSON-LD structured data for this scripture
+// Determine original language and sort versions
+const languages = versions.map((v: any) => v.data.language as string);
+const originalLang = getOriginalLanguage(languages);
+const originalVersion = versions.find((v: any) => v.data.language === originalLang)!;
+const translationVersions = versions.filter((v: any) => v.data.language !== originalLang);
+const data = originalVersion.data;
+
+// Read raw markdown body from file (reliable across Astro versions)
+const contentBase = path.join(process.cwd(), 'src/content/texts');
+function getMarkdownBody(textId: string): string {
+  const filePath = path.join(contentBase, textId + '.md');
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const fmEnd = content.indexOf('---', 3);
+    return fmEnd !== -1 ? content.slice(fmEnd + 3).trim() : content;
+  } catch {
+    return '';
+  }
+}
+
+// Parse verses from each version
+const originalBody = getMarkdownBody(originalVersion.id);
+const originalParsed = parseVerses(originalBody);
+
+const translationsParsed = translationVersions.map((v: any) => ({
+  language: v.data.language as string,
+  title: v.data.title as string,
+  parsed: parseVerses(getMarkdownBody(v.id)),
+}));
+
+// Build interleaved HTML if verse structure exists
+let interleavedHtml = '';
+if (originalParsed.hasVerseStructure) {
+  // Build translation verse map: verseNum → [{language, body}]
+  const translationVerseMap = new Map<number, { language: string; body: string }[]>();
+  for (const t of translationsParsed) {
+    for (const v of t.parsed.verses) {
+      if (!translationVerseMap.has(v.number)) translationVerseMap.set(v.number, []);
+      translationVerseMap.get(v.number)!.push({ language: t.language, body: v.body });
+    }
+  }
+
+  const parts: string[] = [];
+
+  // Preamble (title, subtitle, dividers from original)
+  if (originalParsed.preamble) {
+    parts.push(`<div class="verse-preamble" lang="${originalLang}">`);
+    parts.push(renderVerseHtml(originalParsed.preamble));
+    parts.push(`</div>`);
+  }
+
+  // Interleaved verses
+  for (const verse of originalParsed.verses) {
+    parts.push(`<div class="verse-block" id="verse-${verse.number}">`);
+    parts.push(`<h2 class="verse-heading">${verse.heading}</h2>`);
+
+    // Original text
+    parts.push(`<div class="verse-original" lang="${originalLang}">`);
+    parts.push(`<span class="verse-lang-label">${LANGUAGE_NATIVE_NAMES[originalLang] || originalLang}</span>`);
+    parts.push(`<div class="verse-text">${renderVerseHtml(verse.body)}</div>`);
+    parts.push(`</div>`);
+
+    // Translations
+    const translations = translationVerseMap.get(verse.number) || [];
+    for (const t of translations) {
+      parts.push(`<div class="verse-translation" lang="${t.language}" data-translation-lang="${t.language}">`);
+      parts.push(`<span class="verse-lang-label">${LANGUAGE_NATIVE_NAMES[t.language] || t.language}</span>`);
+      parts.push(`<div class="verse-text">${renderVerseHtml(t.body)}</div>`);
+      parts.push(`</div>`);
+    }
+
+    parts.push(`</div>`);
+  }
+
+  // Epilogue
+  if (originalParsed.epilogue) {
+    parts.push(`<div class="verse-epilogue" lang="${originalLang}">`);
+    parts.push(renderVerseHtml(originalParsed.epilogue));
+    parts.push(`</div>`);
+  }
+
+  interleavedHtml = parts.join('\n');
+}
+
+// For sequential mode (no verse structure), render full content components
+const renderedVersions: { language: string; title: string; Content: any }[] = [];
+if (!originalParsed.hasVerseStructure) {
+  // Render original first, then translations
+  const ordered = [originalVersion, ...translationVersions];
+  for (const v of ordered) {
+    const { Content } = await render(v);
+    renderedVersions.push({
+      language: v.data.language,
+      title: v.data.title,
+      Content,
+    });
+  }
+}
+
+// Chapter navigation (using new slug format)
+const allTexts = await getCollection('texts');
+const scriptureTexts = allTexts
+  .filter(t => t.data.scripture === data.scripture && t.data.language === originalLang)
+  .filter(t => t.data.chapterNumber !== undefined)
+  .sort((a, b) => (a.data.chapterNumber || 0) - (b.data.chapterNumber || 0));
+
+const currentChapterIdx = scriptureTexts.findIndex(c => c.data.chapterNumber === data.chapterNumber);
+const prevChapter = currentChapterIdx > 0 ? scriptureTexts[currentChapterIdx - 1] : null;
+const nextChapter = currentChapterIdx < scriptureTexts.length - 1 ? scriptureTexts[currentChapterIdx + 1] : null;
+
+// Available languages info
+const availableLanguages = versions.map((v: any) => ({
+  code: v.data.language as string,
+  name: LANGUAGE_NAMES[v.data.language] || v.data.language,
+  nativeName: LANGUAGE_NATIVE_NAMES[v.data.language] || v.data.language,
+  isOriginal: v.data.language === originalLang,
+}));
+
+// JSON-LD
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Book",
   "name": data.titleLatin,
   "alternateName": data.title,
-  "inLanguage": data.language,
+  "inLanguage": languages,
   "genre": data.category,
   "author": { "@type": "Person", "name": data.author },
   "isPartOf": { "@type": "BookSeries", "name": data.scripture },
 };
-
-// Get other languages for this scripture
-const allVersions = await getTextsByScripture(data.scripture);
-const languageVersions = allVersions.filter(t =>
-  t.data.chapterNumber === data.chapterNumber || (!t.data.chapterNumber && !data.chapterNumber)
-);
-const otherLanguages = languageVersions.filter(t => t.data.language !== data.language);
-
-// Get chapters if this is a multi-chapter scripture
-const chapters = data.chapterNumber !== undefined
-  ? await getChapters(data.scripture, data.language)
-  : [];
-const currentChapterIdx = chapters.findIndex(c => c.data.chapterNumber === data.chapterNumber);
-const prevChapter = currentChapterIdx > 0 ? chapters[currentChapterIdx - 1] : null;
-const nextChapter = currentChapterIdx < chapters.length - 1 ? chapters[currentChapterIdx + 1] : null;
 ---
 
 <ReadingLayout
   title={data.titleLatin}
   description={data.description}
-  lang={data.language}
+  lang={originalLang}
   scriptureTitle={data.title}
   scriptureTitleLatin={data.titleLatin.split(' - ')[0]}
   ogType="article"
   jsonLd={jsonLd}
-  languageVersions={languageVersions.map(v => ({ id: v.id, language: v.data.language }))}
-  currentLanguage={data.language}
+  availableLanguages={availableLanguages}
+  translationLanguages={translationVersions.map((v: any) => v.data.language)}
 >
   <article class="book-page" data-scripture-id={data.scripture}>
     <header class="scripture-header">
-      <h1 class="scripture-title" lang={data.language}>{data.title}</h1>
+      <h1 class="scripture-title" lang={originalLang}>{data.title}</h1>
       <p class="scripture-subtitle">{data.titleLatin}</p>
       <div class="scripture-meta">
-        <span>{data.category}</span>
+        <span class="meta-category">{data.category}</span>
         <span>{data.author}</span>
         {data.panth !== 'common' && <span>{data.panth}</span>}
-        <span>{LANGUAGE_NAMES[data.language]}</span>
       </div>
 
-      {/* Language switcher */}
-      {otherLanguages.length > 0 && (
-        <nav class="language-switcher" aria-label="Language options">
-          <span class="lang-current">{LANGUAGE_NAMES[data.language]}</span>
-          {otherLanguages.map(ver => (
-            <a href={`${base}read/${ver.id}/`} class="lang-option">
-              {LANGUAGE_NAMES[ver.data.language]}
-            </a>
+      {/* Language badges */}
+      {availableLanguages.length > 0 && (
+        <div class="scripture-languages">
+          {availableLanguages.map(lang => (
+            <span class={`lang-badge ${lang.isOriginal ? 'original' : 'translation'}`}>
+              {lang.nativeName}
+              {lang.isOriginal && <span class="original-marker">original</span>}
+            </span>
           ))}
-        </nav>
+        </div>
       )}
     </header>
 
-    <div class="reading-content" lang={data.language}>
-      <Content />
-    </div>
+    {/* Interleaved verse content */}
+    {originalParsed.hasVerseStructure ? (
+      <div class="reading-content interleaved-content" lang={originalLang}>
+        <Fragment set:html={interleavedHtml} />
+      </div>
+    ) : (
+      <div class="reading-content sequential-content">
+        {renderedVersions.map(({ language, title, Content }) => (
+          <div class="language-section" data-lang={language}>
+            {renderedVersions.length > 1 && (
+              <div class="language-section-header">
+                <span class="lang-section-label">{LANGUAGE_NATIVE_NAMES[language] || language}</span>
+                {language === originalLang && <span class="original-marker">original</span>}
+              </div>
+            )}
+            <div class="language-section-body" lang={language}>
+              <Content />
+            </div>
+            {renderedVersions.length > 1 && <div class="language-section-divider"></div>}
+          </div>
+        ))}
+      </div>
+    )}
 
     {/* Chapter navigation */}
-    {chapters.length > 0 && (
+    {scriptureTexts.length > 1 && data.chapterNumber !== undefined && (
       <nav class="chapter-nav" aria-label="Chapter navigation">
         {prevChapter ? (
-          <a href={`${base}read/${prevChapter.id}/`}>
+          <a href={`${base}read/${getChapterSlug(prevChapter.id)}/`}>
             &larr; {prevChapter.data.chapterTitle || `Chapter ${prevChapter.data.chapterNumber}`}
           </a>
         ) : (
           <span class="disabled">&larr; Previous</span>
         )}
         <span class="chapter-indicator">
-          {data.chapterNumber} / {data.totalChapters || chapters.length}
+          {data.chapterNumber} / {data.totalChapters || scriptureTexts.length}
         </span>
         {nextChapter ? (
-          <a href={`${base}read/${nextChapter.id}/`}>
+          <a href={`${base}read/${getChapterSlug(nextChapter.id)}/`}>
             {nextChapter.data.chapterTitle || `Chapter ${nextChapter.data.chapterNumber}`} &rarr;
           </a>
         ) : (
@@ -111,36 +243,164 @@ const nextChapter = currentChapterIdx < chapters.length - 1 ? chapters[currentCh
 <style>
   @import '../../styles/reading.css';
 
-  .language-switcher {
+  /* Language badges in header */
+  .scripture-languages {
     display: flex;
     gap: 0.5rem;
     justify-content: center;
-    align-items: center;
-    margin-top: 1rem;
     flex-wrap: wrap;
+    margin-top: 1rem;
   }
 
-  .lang-current {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--color-accent);
-    padding: 0.25em 0.7em;
+  .lang-badge {
+    font-size: 0.8rem;
+    padding: 0.25em 0.75em;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .lang-badge.original {
     background: var(--color-accent-light);
-    border-radius: 4px;
-  }
-
-  .lang-option {
-    font-size: 0.85rem;
-    padding: 0.25em 0.7em;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    color: var(--color-text-secondary);
-    transition: all 0.2s ease;
-  }
-
-  .lang-option:hover {
-    border-color: var(--color-accent);
     color: var(--color-accent);
-    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .lang-badge.translation {
+    background: var(--color-bg-secondary, #f5f5f5);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-light);
+  }
+
+  .original-marker {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+  }
+
+  /* Verse blocks — interleaved mode */
+  .verse-block {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .verse-block:last-child {
+    border-bottom: none;
+  }
+
+  .verse-heading {
+    font-family: var(--font-reading);
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+    padding-bottom: 0.3em;
+    border-bottom: 2px solid var(--color-accent-light);
+  }
+
+  .verse-original {
+    margin-bottom: 1rem;
+    padding: 1rem 1.2rem;
+    background: var(--color-accent-light);
+    border-radius: 8px;
+    border-left: 3px solid var(--color-accent);
+  }
+
+  .verse-original .verse-text {
+    font-family: var(--font-reading);
+    font-size: 1.1em;
+    line-height: 1.9;
+    color: var(--color-text);
+  }
+
+  .verse-translation {
+    margin-bottom: 0.75rem;
+    padding: 0.8rem 1.2rem;
+    background: var(--color-bg-secondary, #fafafa);
+    border-radius: 8px;
+    border-left: 3px solid var(--color-border);
+  }
+
+  .verse-translation .verse-text {
+    font-size: 1em;
+    line-height: 1.8;
+    color: var(--color-text-secondary);
+  }
+
+  .verse-lang-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.4rem;
+    padding: 0.15em 0.5em;
+    background: var(--color-bg);
+    border-radius: 4px;
+  }
+
+  .verse-original .verse-lang-label {
+    color: var(--color-accent);
+    background: var(--color-bg);
+  }
+
+  .verse-preamble {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+  }
+
+  .verse-epilogue {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border-light);
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  /* Sequential mode — language sections */
+  .language-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .language-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-accent-light);
+  }
+
+  .lang-section-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .language-section-divider {
+    height: 1px;
+    background: var(--color-border-light);
+    margin: 2rem 0;
+  }
+
+  .language-section:last-child .language-section-divider {
+    display: none;
+  }
+
+  /* Hidden translations (toggle support) */
+  .verse-translation.hidden {
+    display: none;
+  }
+
+  .language-section.hidden {
+    display: none;
   }
 </style>

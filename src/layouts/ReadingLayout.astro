@@ -2,9 +2,11 @@
 import BaseLayout from './BaseLayout.astro';
 import { LANGUAGE_NATIVE_NAMES } from '../utils/content-helpers';
 
-interface LanguageVersion {
-  id: string;
-  language: string;
+interface LanguageInfo {
+  code: string;
+  name: string;
+  nativeName: string;
+  isOriginal: boolean;
 }
 
 interface Props {
@@ -15,11 +17,21 @@ interface Props {
   scriptureTitleLatin?: string;
   ogType?: string;
   jsonLd?: Record<string, unknown>;
-  languageVersions?: LanguageVersion[];
-  currentLanguage?: string;
+  availableLanguages?: LanguageInfo[];
+  translationLanguages?: string[];
 }
 
-const { title, description, lang = 'sa', scriptureTitle, scriptureTitleLatin, ogType, jsonLd, languageVersions = [], currentLanguage = 'sa' } = Astro.props;
+const {
+  title,
+  description,
+  lang = 'sa',
+  scriptureTitle,
+  scriptureTitleLatin,
+  ogType,
+  jsonLd,
+  availableLanguages = [],
+  translationLanguages = [],
+} = Astro.props;
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -52,27 +64,23 @@ const base = import.meta.env.BASE_URL;
       <button class="toolbar-btn" id="add-to-list-btn" title="Add to reading list" aria-label="Add to reading list">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       </button>
-      {/* Language Switcher */}
-      {languageVersions.length > 1 && (
-        <div class="lang-switcher-wrap">
-          <button class="toolbar-btn lang-toggle-btn" id="lang-toggle" title="Switch language" aria-label="Switch language">
+      {/* Translation toggle — only if translations exist */}
+      {translationLanguages.length > 0 && (
+        <div class="translation-toggle-wrap">
+          <button class="toolbar-btn translation-toggle-btn" id="translation-toggle" title="Toggle translations" aria-label="Toggle translations">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            <span class="lang-current-label">{LANGUAGE_NATIVE_NAMES[currentLanguage] || currentLanguage}</span>
+            <span class="translation-label">Translations</span>
           </button>
-          <div class="lang-dropdown" id="lang-dropdown">
-            {languageVersions.map(v => (
-              <a
-                href={`${base}read/${v.id}/`}
-                class={`lang-dropdown-item ${v.language === currentLanguage ? 'active' : ''}`}
-                data-lang={v.language}
-                data-astro-reload
-              >
-                <span class="lang-native">{LANGUAGE_NATIVE_NAMES[v.language] || v.language}</span>
-              </a>
+          <div class="translation-dropdown" id="translation-dropdown">
+            {translationLanguages.map(langCode => (
+              <label class="translation-option" data-lang={langCode}>
+                <input type="checkbox" checked data-translation-toggle={langCode} />
+                <span>{LANGUAGE_NATIVE_NAMES[langCode] || langCode}</span>
+              </label>
             ))}
-            <div class="lang-dropdown-divider"></div>
-            <button class="lang-dropdown-item lang-set-default" id="lang-set-default" data-lang={currentLanguage}>
-              ✦ Set {LANGUAGE_NATIVE_NAMES[currentLanguage]} as default
+            <div class="translation-dropdown-divider"></div>
+            <button class="translation-dropdown-item" id="toggle-all-translations">
+              Show/Hide All
             </button>
           </div>
         </div>
@@ -165,6 +173,90 @@ const base = import.meta.env.BASE_URL;
     .toolbar-scripture-name {
       display: inline;
     }
+  }
+
+  /* Translation toggle dropdown */
+  .translation-toggle-wrap {
+    position: relative;
+    margin-left: 0.3rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid var(--color-border-light);
+  }
+
+  .translation-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+
+  .translation-label {
+    font-size: 0.75rem;
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .translation-label {
+      display: inline;
+    }
+  }
+
+  .translation-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px var(--color-shadow);
+    min-width: 180px;
+    padding: 0.5rem 0;
+    z-index: 200;
+    display: none;
+  }
+
+  .translation-dropdown.open {
+    display: block;
+  }
+
+  .translation-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.5em 1em;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+  }
+
+  .translation-option:hover {
+    background: var(--color-accent-light);
+  }
+
+  .translation-option input[type="checkbox"] {
+    accent-color: var(--color-accent);
+    width: 16px;
+    height: 16px;
+  }
+
+  .translation-dropdown-divider {
+    height: 1px;
+    background: var(--color-border-light);
+    margin: 0.3rem 0;
+  }
+
+  .translation-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5em 1em;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    transition: background 0.15s;
+  }
+
+  .translation-dropdown-item:hover {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
   }
 
   /* Modal */
@@ -404,6 +496,52 @@ const base = import.meta.env.BASE_URL;
   });
   initBookmark();
 
+  // ─── Translation Toggle ───
+  const translationToggle = document.getElementById('translation-toggle');
+  const translationDropdown = document.getElementById('translation-dropdown');
+  const toggleAllBtn = document.getElementById('toggle-all-translations');
+
+  translationToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    translationDropdown?.classList.toggle('open');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (translationDropdown?.classList.contains('open') && !(e.target as Element)?.closest('.translation-toggle-wrap')) {
+      translationDropdown.classList.remove('open');
+    }
+  });
+
+  // Individual translation toggles
+  document.querySelectorAll<HTMLInputElement>('[data-translation-toggle]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const lang = cb.dataset.translationToggle!;
+      const show = cb.checked;
+      // Toggle in interleaved mode
+      document.querySelectorAll<HTMLElement>(`[data-translation-lang="${lang}"]`).forEach(el => {
+        el.classList.toggle('hidden', !show);
+      });
+      // Toggle in sequential mode
+      document.querySelectorAll<HTMLElement>(`.language-section[data-lang="${lang}"]`).forEach(el => {
+        el.classList.toggle('hidden', !show);
+      });
+      // Re-paginate if book reader is active
+      if (reader) {
+        reader.rebuild();
+      }
+    });
+  });
+
+  // Toggle all
+  toggleAllBtn?.addEventListener('click', () => {
+    const checkboxes = document.querySelectorAll<HTMLInputElement>('[data-translation-toggle]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => {
+      cb.checked = !allChecked;
+      cb.dispatchEvent(new Event('change'));
+    });
+  });
+
   // ─── Book Reader Initialization ───
   let reader: BookReader | null = null;
 
@@ -414,41 +552,29 @@ const base = import.meta.env.BASE_URL;
   const pageDots = document.getElementById('page-dots');
 
   function updatePageUI(page: number, total: number) {
-    // Update indicator text
     if (pageIndicator) {
       pageIndicator.textContent = `Page ${page + 1} / ${total}`;
     }
-
-    // Update progress bar
     if (progressBar) {
       const pct = total > 1 ? ((page + 1) / total) * 100 : 100;
       progressBar.style.width = `${pct}%`;
     }
-
-    // Update button states
     if (prevBtn) prevBtn.disabled = page === 0;
     if (nextBtn) nextBtn.disabled = page >= total - 1;
-
-    // Update dots
     if (pageDots) {
       const dots = pageDots.querySelectorAll('.page-dot');
       dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === page);
       });
     }
-
-    // Update TOC active item
     const tocItems = document.querySelectorAll<HTMLElement>('.toc-drawer-item');
     tocItems.forEach(item => {
       const itemPage = parseInt(item.dataset.page || '-1');
       item.classList.toggle('active', itemPage === page);
     });
-
-    // Save progress (debounced)
     debouncedSaveProgress(page, total);
   }
 
-  // ─── Build page dots ───
   function buildPageDots(total: number) {
     if (!pageDots) return;
     if (total > 50) {
@@ -466,7 +592,6 @@ const base = import.meta.env.BASE_URL;
     }
   }
 
-  // ─── Build TOC ───
   function buildTOC() {
     if (!reader) return;
     const tocList = document.getElementById('toc-list');
@@ -484,12 +609,10 @@ const base = import.meta.env.BASE_URL;
       btn.className = 'toc-drawer-item';
       btn.dataset.page = String(item.index);
 
-      // Page number badge
       const badge = document.createElement('span');
       badge.className = 'toc-page-num';
       badge.textContent = String(item.index + 1);
 
-      // Heading text
       const heading = document.createElement('span');
       heading.className = 'toc-heading-text';
       heading.textContent = item.heading;
@@ -525,36 +648,6 @@ const base = import.meta.env.BASE_URL;
   tocClose?.addEventListener('click', closeTOC);
   tocOverlay?.addEventListener('click', closeTOC);
 
-  // ─── Language Switcher Dropdown ───
-  const langToggle = document.getElementById('lang-toggle');
-  const langDropdown = document.getElementById('lang-dropdown');
-  const langSetDefault = document.getElementById('lang-set-default');
-
-  langToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    langDropdown?.classList.toggle('open');
-  });
-
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (langDropdown?.classList.contains('open') && !(e.target as Element)?.closest('.lang-switcher-wrap')) {
-      langDropdown.classList.remove('open');
-    }
-  });
-
-  // Set as default language
-  langSetDefault?.addEventListener('click', () => {
-    const lang = langSetDefault.dataset.lang;
-    if (lang) {
-      localStorage.setItem('sahityaa_pref_lang', lang);
-      langDropdown?.classList.remove('open');
-      // Show brief confirmation
-      const label = langSetDefault.textContent;
-      langSetDefault.textContent = '✓ Saved!';
-      setTimeout(() => { langSetDefault.textContent = label; }, 1500);
-    }
-  });
-
   // ─── Page nav buttons ───
   prevBtn?.addEventListener('click', () => reader?.prevPage());
   nextBtn?.addEventListener('click', () => reader?.nextPage());
@@ -579,7 +672,6 @@ const base = import.meta.env.BASE_URL;
     }, 1500);
   }
 
-  // ─── Resume reading (page-based) ───
   async function tryResumeReading(): Promise<number> {
     if (!scriptureId) return 0;
     const saved = await progress.get(scriptureId, pageLang);
@@ -589,35 +681,30 @@ const base = import.meta.env.BASE_URL;
     return 0;
   }
 
-  // ─── Initialize everything ───
   async function initBookReader() {
     reader = new BookReader({
       contentSelector: '#content-source .reading-content',
       pageSelector: '#book-display',
-      shlokasPerPage: 5,
+      shlokasPerPage: 3, // Fewer per page since each verse now includes translations
       onPageChange: updatePageUI,
     });
 
     const ok = reader.init();
     if (!ok) {
-      // Fallback: show content directly if pagination fails
       const source = document.getElementById('content-source');
       const display = document.getElementById('book-display');
       if (source && display) {
         display.innerHTML = source.innerHTML;
         source.remove();
       }
-      // Hide page controls
       document.getElementById('page-nav')?.remove();
       pageDots?.remove();
       return;
     }
 
-    // Build dots and TOC
     buildPageDots(reader.getTotalPages());
     buildTOC();
 
-    // Resume from saved page
     const resumePage = await tryResumeReading();
     if (resumePage > 0 && resumePage < reader.getTotalPages()) {
       reader.goToPage(resumePage);
@@ -625,7 +712,6 @@ const base = import.meta.env.BASE_URL;
     }
   }
 
-  // Start
   initBookReader();
 
   // ─── Add to Reading List modal ───
