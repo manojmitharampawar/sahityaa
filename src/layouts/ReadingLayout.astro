@@ -390,394 +390,400 @@ const base = import.meta.env.BASE_URL;
   import type { ThemeMode, FontSize } from '../scripts/storage';
   import { BookReader } from '../scripts/book-reader';
 
-  // ─── Toast helper ───
-  function showToast(msg: string) {
-    const toast = document.getElementById('toast');
-    if (!toast) return;
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
-  }
+  // ─── Re-initialize on every page load (initial + client-side navigation) ───
+  document.addEventListener('astro:page-load', () => {
+    // Only run on reading pages (this layout)
+    if (!document.getElementById('content-source')) return;
 
-  // ─── Theme toggle ───
-  const themeToggle = document.getElementById('theme-toggle');
-  const themes: ThemeMode[] = ['sepia', 'light', 'dark'];
-  const themeLabels: Record<ThemeMode, string> = { sepia: 'Sepia', light: 'Light', dark: 'Dark' };
-  themeToggle?.addEventListener('click', () => {
-    const current = prefs.getTheme();
-    const idx = themes.indexOf(current);
-    const next = themes[(idx + 1) % themes.length];
-    document.documentElement.setAttribute('data-theme', next);
-    prefs.setTheme(next);
-    showToast(`Theme: ${themeLabels[next]}`);
-  });
+    // ─── Toast helper ───
+    function showToast(msg: string) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
 
-  // ─── Font size controls ───
-  const sizes: FontSize[] = ['sm', 'md', 'lg', 'xl'];
-  const sizeLabels: Record<FontSize, string> = { sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra Large' };
-  function getCurrentSizeIdx(): number {
-    return Math.max(0, sizes.indexOf(prefs.getFontSize()));
-  }
-  function setFontSize(idx: number) {
-    const clamped = Math.max(0, Math.min(sizes.length - 1, idx));
-    sizes.forEach(s => document.documentElement.classList.remove(`font-size-${s}`));
-    document.documentElement.classList.add(`font-size-${sizes[clamped]}`);
-    prefs.setFontSize(sizes[clamped]);
-    showToast(`Font: ${sizeLabels[sizes[clamped]]}`);
-  }
-  document.getElementById('font-decrease')?.addEventListener('click', () => {
-    setFontSize(getCurrentSizeIdx() - 1);
-  });
-  document.getElementById('font-increase')?.addEventListener('click', () => {
-    setFontSize(getCurrentSizeIdx() + 1);
-  });
-
-  // ─── Get scripture context ───
-  const scriptureEl = document.querySelector<HTMLElement>('[data-scripture-id]');
-  const scriptureId = scriptureEl?.dataset.scriptureId || '';
-  const pageSlug = window.location.pathname;
-  const pageLang = document.documentElement.lang || 'sa';
-
-  function setSvgFill(btn: HTMLElement | null, filled: boolean) {
-    btn?.classList.toggle('active', filled);
-    btn?.querySelector('svg')?.setAttribute('fill', filled ? 'currentColor' : 'none');
-  }
-
-  // ─── Favorite toggle (IndexedDB) ───
-  const favoriteBtn = document.getElementById('favorite-toggle');
-  async function initFavorite() {
-    if (!scriptureId) return;
-    const isFav = await favorites.isFavorite(scriptureId);
-    setSvgFill(favoriteBtn, isFav);
-  }
-  favoriteBtn?.addEventListener('click', async () => {
-    if (!scriptureId) return;
-    const isNowFav = await favorites.toggle(scriptureId);
-    setSvgFill(favoriteBtn, isNowFav);
-    showToast(isNowFav ? 'Added to favorites' : 'Removed from favorites');
-  });
-  initFavorite();
-
-  // ─── Read Later toggle (IndexedDB) ───
-  const readLaterBtn = document.getElementById('read-later-toggle');
-  async function initReadLater() {
-    if (!scriptureId) return;
-    const inList = await readLater.isInList(scriptureId);
-    setSvgFill(readLaterBtn, inList);
-  }
-  readLaterBtn?.addEventListener('click', async () => {
-    if (!scriptureId) return;
-    const isNowSaved = await readLater.toggle(scriptureId);
-    setSvgFill(readLaterBtn, isNowSaved);
-    showToast(isNowSaved ? 'Saved for later' : 'Removed from read later');
-  });
-  initReadLater();
-
-  // ─── Bookmark toggle (IndexedDB) ───
-  const bookmarkBtn = document.getElementById('bookmark-toggle');
-  async function initBookmark() {
-    const existing = await bookmarks.getForPage(pageSlug);
-    setSvgFill(bookmarkBtn, !!existing);
-  }
-  bookmarkBtn?.addEventListener('click', async () => {
-    const currentPageNum = reader?.getCurrentPage() || 0;
-    const totalPagesNum = reader?.getTotalPages() || 1;
-    const pct = totalPagesNum > 1 ? (currentPageNum / (totalPagesNum - 1)) * 100 : 0;
-
-    const isNowBookmarked = await bookmarks.toggleForPage(pageSlug, {
-      scriptureId,
-      language: pageLang,
-      scrollPercent: pct,
-      note: `Page ${currentPageNum + 1}`,
-      title: document.title,
+    // ─── Theme toggle ───
+    const themeToggle = document.getElementById('theme-toggle');
+    const themes: ThemeMode[] = ['sepia', 'light', 'dark'];
+    const themeLabels: Record<ThemeMode, string> = { sepia: 'Sepia', light: 'Light', dark: 'Dark' };
+    themeToggle?.addEventListener('click', () => {
+      const current = prefs.getTheme();
+      const idx = themes.indexOf(current);
+      const next = themes[(idx + 1) % themes.length];
+      document.documentElement.setAttribute('data-theme', next);
+      prefs.setTheme(next);
+      showToast(`Theme: ${themeLabels[next]}`);
     });
-    setSvgFill(bookmarkBtn, isNowBookmarked);
-    showToast(isNowBookmarked ? `Bookmarked page ${currentPageNum + 1}` : 'Bookmark removed');
-  });
-  initBookmark();
 
-  // ─── Translation Toggle ───
-  const translationToggle = document.getElementById('translation-toggle');
-  const translationDropdown = document.getElementById('translation-dropdown');
-  const toggleAllBtn = document.getElementById('toggle-all-translations');
-
-  translationToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    translationDropdown?.classList.toggle('open');
-  });
-
-  document.addEventListener('click', (e) => {
-    if (translationDropdown?.classList.contains('open') && !(e.target as Element)?.closest('.translation-toggle-wrap')) {
-      translationDropdown.classList.remove('open');
+    // ─── Font size controls ───
+    const sizes: FontSize[] = ['sm', 'md', 'lg', 'xl'];
+    const sizeLabels: Record<FontSize, string> = { sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra Large' };
+    function getCurrentSizeIdx(): number {
+      return Math.max(0, sizes.indexOf(prefs.getFontSize()));
     }
-  });
-
-  // Individual translation toggles
-  document.querySelectorAll<HTMLInputElement>('[data-translation-toggle]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const lang = cb.dataset.translationToggle!;
-      const show = cb.checked;
-      // Toggle in interleaved mode
-      document.querySelectorAll<HTMLElement>(`[data-translation-lang="${lang}"]`).forEach(el => {
-        el.classList.toggle('hidden', !show);
-      });
-      // Toggle in sequential mode
-      document.querySelectorAll<HTMLElement>(`.language-section[data-lang="${lang}"]`).forEach(el => {
-        el.classList.toggle('hidden', !show);
-      });
-      // Re-paginate if book reader is active
-      if (reader) {
-        reader.rebuild();
-      }
+    function setFontSize(idx: number) {
+      const clamped = Math.max(0, Math.min(sizes.length - 1, idx));
+      sizes.forEach(s => document.documentElement.classList.remove(`font-size-${s}`));
+      document.documentElement.classList.add(`font-size-${sizes[clamped]}`);
+      prefs.setFontSize(sizes[clamped]);
+      showToast(`Font: ${sizeLabels[sizes[clamped]]}`);
+    }
+    document.getElementById('font-decrease')?.addEventListener('click', () => {
+      setFontSize(getCurrentSizeIdx() - 1);
     });
-  });
-
-  // Toggle all
-  toggleAllBtn?.addEventListener('click', () => {
-    const checkboxes = document.querySelectorAll<HTMLInputElement>('[data-translation-toggle]');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    checkboxes.forEach(cb => {
-      cb.checked = !allChecked;
-      cb.dispatchEvent(new Event('change'));
+    document.getElementById('font-increase')?.addEventListener('click', () => {
+      setFontSize(getCurrentSizeIdx() + 1);
     });
-  });
 
-  // ─── Book Reader Initialization ───
-  let reader: BookReader | null = null;
+    // ─── Get scripture context ───
+    const scriptureEl = document.querySelector<HTMLElement>('[data-scripture-id]');
+    const scriptureId = scriptureEl?.dataset.scriptureId || '';
+    const pageSlug = window.location.pathname;
+    const pageLang = document.documentElement.lang || 'sa';
 
-  const prevBtn = document.getElementById('prev-page') as HTMLButtonElement;
-  const nextBtn = document.getElementById('next-page') as HTMLButtonElement;
-  const pageIndicator = document.getElementById('page-indicator');
-  const progressBar = document.getElementById('progress-bar');
-  const pageDots = document.getElementById('page-dots');
-
-  function updatePageUI(page: number, total: number) {
-    if (pageIndicator) {
-      pageIndicator.textContent = `Page ${page + 1} / ${total}`;
-    }
-    if (progressBar) {
-      const pct = total > 1 ? ((page + 1) / total) * 100 : 100;
-      progressBar.style.width = `${pct}%`;
-    }
-    if (prevBtn) prevBtn.disabled = page === 0;
-    if (nextBtn) nextBtn.disabled = page >= total - 1;
-    if (pageDots) {
-      const dots = pageDots.querySelectorAll('.page-dot');
-      dots.forEach((dot, i) => {
-        dot.classList.toggle('active', i === page);
-      });
-    }
-    const tocItems = document.querySelectorAll<HTMLElement>('.toc-drawer-item');
-    tocItems.forEach(item => {
-      const itemPage = parseInt(item.dataset.page || '-1');
-      item.classList.toggle('active', itemPage === page);
-    });
-    debouncedSaveProgress(page, total);
-  }
-
-  function buildPageDots(total: number) {
-    if (!pageDots) return;
-    if (total > 50) {
-      pageDots.classList.add('too-many');
-      return;
-    }
-    pageDots.innerHTML = '';
-    for (let i = 0; i < total; i++) {
-      const dot = document.createElement('button');
-      dot.className = 'page-dot' + (i === 0 ? ' active' : '');
-      dot.title = `Page ${i + 1}`;
-      dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-      dot.addEventListener('click', () => reader?.goToPage(i));
-      pageDots.appendChild(dot);
-    }
-  }
-
-  function buildTOC() {
-    if (!reader) return;
-    const tocList = document.getElementById('toc-list');
-    if (!tocList) return;
-
-    const toc = reader.getTableOfContents();
-    if (toc.length === 0) {
-      tocList.innerHTML = '<p style="padding:1em;color:var(--color-text-muted);font-size:0.9rem;">No sections found</p>';
-      return;
+    function setSvgFill(btn: HTMLElement | null, filled: boolean) {
+      btn?.classList.toggle('active', filled);
+      btn?.querySelector('svg')?.setAttribute('fill', filled ? 'currentColor' : 'none');
     }
 
-    tocList.innerHTML = '';
-    for (const item of toc) {
-      const btn = document.createElement('button');
-      btn.className = 'toc-drawer-item';
-      btn.dataset.page = String(item.index);
-
-      const badge = document.createElement('span');
-      badge.className = 'toc-page-num';
-      badge.textContent = String(item.index + 1);
-
-      const heading = document.createElement('span');
-      heading.className = 'toc-heading-text';
-      heading.textContent = item.heading;
-
-      btn.appendChild(badge);
-      btn.appendChild(heading);
-
-      btn.addEventListener('click', () => {
-        reader?.goToPage(item.index);
-        closeTOC();
-      });
-      tocList.appendChild(btn);
-    }
-  }
-
-  // ─── TOC Drawer ───
-  const tocToggle = document.getElementById('toc-toggle');
-  const tocDrawer = document.getElementById('toc-drawer');
-  const tocOverlay = document.getElementById('toc-overlay');
-  const tocClose = document.getElementById('toc-close');
-
-  function openTOC() {
-    tocDrawer?.classList.add('open');
-    tocOverlay?.classList.add('open');
-  }
-
-  function closeTOC() {
-    tocDrawer?.classList.remove('open');
-    tocOverlay?.classList.remove('open');
-  }
-
-  tocToggle?.addEventListener('click', openTOC);
-  tocClose?.addEventListener('click', closeTOC);
-  tocOverlay?.addEventListener('click', closeTOC);
-
-  // ─── Page nav buttons ───
-  prevBtn?.addEventListener('click', () => reader?.prevPage());
-  nextBtn?.addEventListener('click', () => reader?.nextPage());
-
-  // ─── Reading Progress (IndexedDB, debounced) ───
-  let progressTimer: ReturnType<typeof setTimeout>;
-  function debouncedSaveProgress(page: number, total: number) {
-    clearTimeout(progressTimer);
-    progressTimer = setTimeout(async () => {
+    // ─── Favorite toggle (IndexedDB) ───
+    const favoriteBtn = document.getElementById('favorite-toggle');
+    async function initFavorite() {
       if (!scriptureId) return;
-      const pct = total > 1 ? Math.round(((page + 1) / total) * 100) : 100;
-      await progress.save({
+      const isFav = await favorites.isFavorite(scriptureId);
+      setSvgFill(favoriteBtn, isFav);
+    }
+    favoriteBtn?.addEventListener('click', async () => {
+      if (!scriptureId) return;
+      const isNowFav = await favorites.toggle(scriptureId);
+      setSvgFill(favoriteBtn, isNowFav);
+      showToast(isNowFav ? 'Added to favorites' : 'Removed from favorites');
+    });
+    initFavorite();
+
+    // ─── Read Later toggle (IndexedDB) ───
+    const readLaterBtn = document.getElementById('read-later-toggle');
+    async function initReadLater() {
+      if (!scriptureId) return;
+      const inList = await readLater.isInList(scriptureId);
+      setSvgFill(readLaterBtn, inList);
+    }
+    readLaterBtn?.addEventListener('click', async () => {
+      if (!scriptureId) return;
+      const isNowSaved = await readLater.toggle(scriptureId);
+      setSvgFill(readLaterBtn, isNowSaved);
+      showToast(isNowSaved ? 'Saved for later' : 'Removed from read later');
+    });
+    initReadLater();
+
+    // ─── Bookmark toggle (IndexedDB) ───
+    const bookmarkBtn = document.getElementById('bookmark-toggle');
+    async function initBookmark() {
+      const existing = await bookmarks.getForPage(pageSlug);
+      setSvgFill(bookmarkBtn, !!existing);
+    }
+    bookmarkBtn?.addEventListener('click', async () => {
+      const currentPageNum = reader?.getCurrentPage() || 0;
+      const totalPagesNum = reader?.getTotalPages() || 1;
+      const pct = totalPagesNum > 1 ? (currentPageNum / (totalPagesNum - 1)) * 100 : 0;
+
+      const isNowBookmarked = await bookmarks.toggleForPage(pageSlug, {
         scriptureId,
         language: pageLang,
-        lastPageSlug: pageSlug,
-        currentPage: page,
-        totalPages: total,
         scrollPercent: pct,
-        percentComplete: pct,
-        lastReadAt: Date.now(),
+        note: `Page ${currentPageNum + 1}`,
+        title: document.title,
       });
-    }, 1500);
-  }
+      setSvgFill(bookmarkBtn, isNowBookmarked);
+      showToast(isNowBookmarked ? `Bookmarked page ${currentPageNum + 1}` : 'Bookmark removed');
+    });
+    initBookmark();
 
-  async function tryResumeReading(): Promise<number> {
-    if (!scriptureId) return 0;
-    const saved = await progress.get(scriptureId, pageLang);
-    if (saved && saved.lastPageSlug === pageSlug && saved.currentPage > 0) {
-      return saved.currentPage;
-    }
-    return 0;
-  }
+    // ─── Translation Toggle ───
+    const translationToggle = document.getElementById('translation-toggle');
+    const translationDropdown = document.getElementById('translation-dropdown');
+    const toggleAllBtn = document.getElementById('toggle-all-translations');
 
-  async function initBookReader() {
-    reader = new BookReader({
-      contentSelector: '#content-source .reading-content',
-      pageSelector: '#book-display',
-      shlokasPerPage: 3, // Fewer per page since each verse now includes translations
-      onPageChange: updatePageUI,
+    translationToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      translationDropdown?.classList.toggle('open');
     });
 
-    const ok = reader.init();
-    if (!ok) {
-      const source = document.getElementById('content-source');
-      const display = document.getElementById('book-display');
-      if (source && display) {
-        display.innerHTML = source.innerHTML;
-        source.remove();
+    document.addEventListener('click', (e) => {
+      if (translationDropdown?.classList.contains('open') && !(e.target as Element)?.closest('.translation-toggle-wrap')) {
+        translationDropdown.classList.remove('open');
       }
-      document.getElementById('page-nav')?.remove();
-      pageDots?.remove();
-      return;
-    }
+    });
 
-    buildPageDots(reader.getTotalPages());
-    buildTOC();
-
-    const resumePage = await tryResumeReading();
-    if (resumePage > 0 && resumePage < reader.getTotalPages()) {
-      reader.goToPage(resumePage);
-      showToast(`Resumed at page ${resumePage + 1}`);
-    }
-  }
-
-  initBookReader();
-
-  // ─── Add to Reading List modal ───
-  const addToListBtn = document.getElementById('add-to-list-btn');
-  const listModal = document.getElementById('list-modal-overlay');
-  const listModalClose = document.getElementById('list-modal-close');
-  const listModalLists = document.getElementById('list-modal-lists');
-  const newListInput = document.getElementById('new-list-name') as HTMLInputElement;
-  const createListBtn = document.getElementById('create-list-btn');
-
-  async function renderListModal() {
-    if (!listModalLists) return;
-    const lists = await readingLists.getAll();
-    if (lists.length === 0) {
-      listModalLists.innerHTML = '<p style="color:var(--color-text-muted);font-size:0.9rem;">No reading lists yet. Create one below.</p>';
-      return;
-    }
-    const listsForThis = await readingLists.getListsForScripture(scriptureId);
-    const inListIds = new Set(listsForThis.map(l => l.id));
-
-    listModalLists.innerHTML = lists.map(l => `
-      <label class="list-option" style="display:flex;align-items:center;gap:0.6em;padding:0.5em 0;cursor:pointer;font-size:0.9rem;">
-        <input type="checkbox" data-list-id="${l.id}" ${inListIds.has(l.id) ? 'checked' : ''} style="accent-color:var(--color-accent);width:16px;height:16px;" />
-        <span>${l.name}</span>
-        <span style="margin-left:auto;font-size:0.75rem;color:var(--color-text-muted);">${l.items.length} items</span>
-      </label>
-    `).join('');
-
-    listModalLists.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-      cb.addEventListener('change', async (e) => {
-        const input = e.target as HTMLInputElement;
-        const listId = input.dataset.listId!;
-        if (input.checked) {
-          await readingLists.addItem(listId, scriptureId);
-          showToast('Added to list');
-        } else {
-          await readingLists.removeItem(listId, scriptureId);
-          showToast('Removed from list');
+    // Individual translation toggles
+    document.querySelectorAll<HTMLInputElement>('[data-translation-toggle]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const lang = cb.dataset.translationToggle!;
+        const show = cb.checked;
+        // Toggle in interleaved mode
+        document.querySelectorAll<HTMLElement>(`[data-translation-lang="${lang}"]`).forEach(el => {
+          el.classList.toggle('hidden', !show);
+        });
+        // Toggle in sequential mode
+        document.querySelectorAll<HTMLElement>(`.language-section[data-lang="${lang}"]`).forEach(el => {
+          el.classList.toggle('hidden', !show);
+        });
+        // Re-paginate if book reader is active
+        if (reader) {
+          reader.rebuild();
         }
       });
     });
-  }
 
-  addToListBtn?.addEventListener('click', async () => {
-    await renderListModal();
-    listModal?.classList.add('open');
-  });
+    // Toggle all
+    toggleAllBtn?.addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll<HTMLInputElement>('[data-translation-toggle]');
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+        cb.dispatchEvent(new Event('change'));
+      });
+    });
 
-  listModalClose?.addEventListener('click', () => {
-    listModal?.classList.remove('open');
-  });
+    // ─── Book Reader Initialization ───
+    let reader: BookReader | null = null;
 
-  listModal?.addEventListener('click', (e) => {
-    if (e.target === listModal) listModal.classList.remove('open');
-  });
+    const prevBtn = document.getElementById('prev-page') as HTMLButtonElement;
+    const nextBtn = document.getElementById('next-page') as HTMLButtonElement;
+    const pageIndicator = document.getElementById('page-indicator');
+    const progressBar = document.getElementById('progress-bar');
+    const pageDots = document.getElementById('page-dots');
 
-  createListBtn?.addEventListener('click', async () => {
-    const name = newListInput?.value.trim();
-    if (!name) return;
-    await readingLists.create(name);
-    if (newListInput) newListInput.value = '';
-    await renderListModal();
-    showToast(`List "${name}" created`);
-  });
+    function updatePageUI(page: number, total: number) {
+      if (pageIndicator) {
+        pageIndicator.textContent = `Page ${page + 1} / ${total}`;
+      }
+      if (progressBar) {
+        const pct = total > 1 ? ((page + 1) / total) * 100 : 100;
+        progressBar.style.width = `${pct}%`;
+      }
+      if (prevBtn) prevBtn.disabled = page === 0;
+      if (nextBtn) nextBtn.disabled = page >= total - 1;
+      if (pageDots) {
+        const dots = pageDots.querySelectorAll('.page-dot');
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === page);
+        });
+      }
+      const tocItems = document.querySelectorAll<HTMLElement>('.toc-drawer-item');
+      tocItems.forEach(item => {
+        const itemPage = parseInt(item.dataset.page || '-1');
+        item.classList.toggle('active', itemPage === page);
+      });
+      debouncedSaveProgress(page, total);
+    }
 
-  newListInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') createListBtn?.click();
-  });
+    function buildPageDots(total: number) {
+      if (!pageDots) return;
+      if (total > 50) {
+        pageDots.classList.add('too-many');
+        return;
+      }
+      pageDots.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'page-dot' + (i === 0 ? ' active' : '');
+        dot.title = `Page ${i + 1}`;
+        dot.setAttribute('aria-label', `Go to page ${i + 1}`);
+        dot.addEventListener('click', () => reader?.goToPage(i));
+        pageDots.appendChild(dot);
+      }
+    }
+
+    function buildTOC() {
+      if (!reader) return;
+      const tocList = document.getElementById('toc-list');
+      if (!tocList) return;
+
+      const toc = reader.getTableOfContents();
+      if (toc.length === 0) {
+        tocList.innerHTML = '<p style="padding:1em;color:var(--color-text-muted);font-size:0.9rem;">No sections found</p>';
+        return;
+      }
+
+      tocList.innerHTML = '';
+      for (const item of toc) {
+        const btn = document.createElement('button');
+        btn.className = 'toc-drawer-item';
+        btn.dataset.page = String(item.index);
+
+        const badge = document.createElement('span');
+        badge.className = 'toc-page-num';
+        badge.textContent = String(item.index + 1);
+
+        const heading = document.createElement('span');
+        heading.className = 'toc-heading-text';
+        heading.textContent = item.heading;
+
+        btn.appendChild(badge);
+        btn.appendChild(heading);
+
+        btn.addEventListener('click', () => {
+          reader?.goToPage(item.index);
+          closeTOC();
+        });
+        tocList.appendChild(btn);
+      }
+    }
+
+    // ─── TOC Drawer ───
+    const tocToggle = document.getElementById('toc-toggle');
+    const tocDrawer = document.getElementById('toc-drawer');
+    const tocOverlay = document.getElementById('toc-overlay');
+    const tocClose = document.getElementById('toc-close');
+
+    function openTOC() {
+      tocDrawer?.classList.add('open');
+      tocOverlay?.classList.add('open');
+    }
+
+    function closeTOC() {
+      tocDrawer?.classList.remove('open');
+      tocOverlay?.classList.remove('open');
+    }
+
+    tocToggle?.addEventListener('click', openTOC);
+    tocClose?.addEventListener('click', closeTOC);
+    tocOverlay?.addEventListener('click', closeTOC);
+
+    // ─── Page nav buttons ───
+    prevBtn?.addEventListener('click', () => reader?.prevPage());
+    nextBtn?.addEventListener('click', () => reader?.nextPage());
+
+    // ─── Reading Progress (IndexedDB, debounced) ───
+    let progressTimer: ReturnType<typeof setTimeout>;
+    function debouncedSaveProgress(page: number, total: number) {
+      clearTimeout(progressTimer);
+      progressTimer = setTimeout(async () => {
+        if (!scriptureId) return;
+        const pct = total > 1 ? Math.round(((page + 1) / total) * 100) : 100;
+        await progress.save({
+          scriptureId,
+          language: pageLang,
+          lastPageSlug: pageSlug,
+          currentPage: page,
+          totalPages: total,
+          scrollPercent: pct,
+          percentComplete: pct,
+          lastReadAt: Date.now(),
+        });
+      }, 1500);
+    }
+
+    async function tryResumeReading(): Promise<number> {
+      if (!scriptureId) return 0;
+      const saved = await progress.get(scriptureId, pageLang);
+      if (saved && saved.lastPageSlug === pageSlug && saved.currentPage > 0) {
+        return saved.currentPage;
+      }
+      return 0;
+    }
+
+    async function initBookReader() {
+      reader = new BookReader({
+        contentSelector: '#content-source .reading-content',
+        pageSelector: '#book-display',
+        shlokasPerPage: 3, // Fewer per page since each verse now includes translations
+        onPageChange: updatePageUI,
+      });
+
+      const ok = reader.init();
+      if (!ok) {
+        const source = document.getElementById('content-source');
+        const display = document.getElementById('book-display');
+        if (source && display) {
+          display.innerHTML = source.innerHTML;
+          source.remove();
+        }
+        document.getElementById('page-nav')?.remove();
+        pageDots?.remove();
+        return;
+      }
+
+      buildPageDots(reader.getTotalPages());
+      buildTOC();
+
+      const resumePage = await tryResumeReading();
+      if (resumePage > 0 && resumePage < reader.getTotalPages()) {
+        reader.goToPage(resumePage);
+        showToast(`Resumed at page ${resumePage + 1}`);
+      }
+    }
+
+    initBookReader();
+
+    // ─── Add to Reading List modal ───
+    const addToListBtn = document.getElementById('add-to-list-btn');
+    const listModal = document.getElementById('list-modal-overlay');
+    const listModalClose = document.getElementById('list-modal-close');
+    const listModalLists = document.getElementById('list-modal-lists');
+    const newListInput = document.getElementById('new-list-name') as HTMLInputElement;
+    const createListBtn = document.getElementById('create-list-btn');
+
+    async function renderListModal() {
+      if (!listModalLists) return;
+      const lists = await readingLists.getAll();
+      if (lists.length === 0) {
+        listModalLists.innerHTML = '<p style="color:var(--color-text-muted);font-size:0.9rem;">No reading lists yet. Create one below.</p>';
+        return;
+      }
+      const listsForThis = await readingLists.getListsForScripture(scriptureId);
+      const inListIds = new Set(listsForThis.map(l => l.id));
+
+      listModalLists.innerHTML = lists.map(l => `
+        <label class="list-option" style="display:flex;align-items:center;gap:0.6em;padding:0.5em 0;cursor:pointer;font-size:0.9rem;">
+          <input type="checkbox" data-list-id="${l.id}" ${inListIds.has(l.id) ? 'checked' : ''} style="accent-color:var(--color-accent);width:16px;height:16px;" />
+          <span>${l.name}</span>
+          <span style="margin-left:auto;font-size:0.75rem;color:var(--color-text-muted);">${l.items.length} items</span>
+        </label>
+      `).join('');
+
+      listModalLists.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', async (e) => {
+          const input = e.target as HTMLInputElement;
+          const listId = input.dataset.listId!;
+          if (input.checked) {
+            await readingLists.addItem(listId, scriptureId);
+            showToast('Added to list');
+          } else {
+            await readingLists.removeItem(listId, scriptureId);
+            showToast('Removed from list');
+          }
+        });
+      });
+    }
+
+    addToListBtn?.addEventListener('click', async () => {
+      await renderListModal();
+      listModal?.classList.add('open');
+    });
+
+    listModalClose?.addEventListener('click', () => {
+      listModal?.classList.remove('open');
+    });
+
+    listModal?.addEventListener('click', (e) => {
+      if (e.target === listModal) listModal.classList.remove('open');
+    });
+
+    createListBtn?.addEventListener('click', async () => {
+      const name = newListInput?.value.trim();
+      if (!name) return;
+      await readingLists.create(name);
+      if (newListInput) newListInput.value = '';
+      await renderListModal();
+      showToast(`List "${name}" created`);
+    });
+
+    newListInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') createListBtn?.click();
+    });
+  }); // end astro:page-load
 </script>
