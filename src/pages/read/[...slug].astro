@@ -167,6 +167,9 @@ const jsonLd = {
   jsonLd={jsonLd}
   availableLanguages={availableLanguages}
   translationLanguages={translationVersions.map((v: any) => v.data.language)}
+  prevChapter={prevChapter ? { href: `${base}read/${getChapterSlug(prevChapter.id)}/`, label: prevChapter.data.chapterTitle || `Chapter ${prevChapter.data.chapterNumber}` } : undefined}
+  nextChapter={nextChapter ? { href: `${base}read/${getChapterSlug(nextChapter.id)}/`, label: nextChapter.data.chapterTitle || `Chapter ${nextChapter.data.chapterNumber}` } : undefined}
+  chapterIndicator={scriptureTexts.length > 1 && data.chapterNumber !== undefined ? `${data.chapterNumber} / ${data.totalChapters || scriptureTexts.length}` : undefined}
 >
   <article class="book-page" data-scripture-id={data.scripture}>
     <header class="scripture-header">
@@ -215,28 +218,6 @@ const jsonLd = {
       </div>
     )}
 
-    {/* Chapter navigation */}
-    {scriptureTexts.length > 1 && data.chapterNumber !== undefined && (
-      <nav class="chapter-nav" aria-label="Chapter navigation">
-        {prevChapter ? (
-          <a href={`${base}read/${getChapterSlug(prevChapter.id)}/`}>
-            &larr; {prevChapter.data.chapterTitle || `Chapter ${prevChapter.data.chapterNumber}`}
-          </a>
-        ) : (
-          <span class="disabled">&larr; Previous</span>
-        )}
-        <span class="chapter-indicator">
-          {data.chapterNumber} / {data.totalChapters || scriptureTexts.length}
-        </span>
-        {nextChapter ? (
-          <a href={`${base}read/${getChapterSlug(nextChapter.id)}/`}>
-            {nextChapter.data.chapterTitle || `Chapter ${nextChapter.data.chapterNumber}`} &rarr;
-          </a>
-        ) : (
-          <span class="disabled">Next &rarr;</span>
-        )}
-      </nav>
-    )}
   </article>
 </ReadingLayout>
 
