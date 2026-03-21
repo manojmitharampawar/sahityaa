@@ -91,7 +91,7 @@ export class BookReader {
           // Each verse-block is its own group — heading is already inside the element
           if (!el.classList.contains('hidden')) {
             // Extract heading text for TOC but don't set heading element (it's inside the block)
-            const headingEl = el.querySelector('.verse-heading') as HTMLElement | null;
+            const headingEl = el.querySelector('.verse-number-chip') as HTMLElement | null;
             const fakeGroup = { elements: [el] } as { heading?: HTMLElement; elements: HTMLElement[] };
             // Store heading text via a data attribute for TOC extraction later
             if (headingEl) {

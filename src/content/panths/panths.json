@@ -61,5 +61,13 @@
     "namesByLanguage": { "hi": "वारकरी", "mr": "वारकरी", "en": "Varkari" },
     "description": "Devotional tradition of Maharashtra centered on worship of Vitthal (Vishnu) at Pandharpur, founded by saints like Dnyaneshwar and Tukaram.",
     "primaryDeity": "Vitthal"
+  },
+  {
+    "id": "datta-sampradaya",
+    "name": "दत्त संप्रदाय",
+    "nameLatin": "Datta Sampradaya",
+    "namesByLanguage": { "hi": "दत्त संप्रदाय", "mr": "दत्त संप्रदाय", "en": "Datta Tradition" },
+    "description": "Tradition centered on Lord Dattatreya (the combined form of Brahma, Vishnu, and Shiva) and his incarnations like Shripad Shri Vallabh and Shri Nrusimha Saraswati.",
+    "primaryDeity": "Dattatreya"
   }
 ]

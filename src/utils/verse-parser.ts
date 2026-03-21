@@ -89,6 +89,11 @@ export function parseVerses(markdown: string): ParsedContent {
     });
   }
 
+  // Strip divider elements from all verse bodies (dividers only belong in preamble/epilogue)
+  for (const v of verses) {
+    v.body = v.body.replace(/<div class="divider"><\/div>/g, '').trim();
+  }
+
   // Check if the last verse has trailing epilogue content (divider + colophon)
   let epilogue = '';
   if (verses.length > 0) {

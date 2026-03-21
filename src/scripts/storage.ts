@@ -233,4 +233,15 @@ export const readingLists = {
     const lists = await this.getAll();
     return lists.filter(l => l.items.includes(scriptureId));
   },
+  async reorderItem(listId: string, itemId: string, newIndex: number): Promise<void> {
+    const lists = await this.getAll();
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    const oldIndex = list.items.indexOf(itemId);
+    if (oldIndex === -1) return;
+    list.items.splice(oldIndex, 1);
+    list.items.splice(newIndex, 0, itemId);
+    list.updatedAt = Date.now();
+    await set(`${PREFIX}reading_lists`, lists);
+  },
 };

@@ -11,13 +11,13 @@ const texts = defineCollection({
     category: z.enum([
       'vedas', 'upanishads', 'puranas', 'epics', 'stotras',
       'gitas', 'smritis', 'tantras', 'agamas', 'sutras',
-      'aartis', 'abhangas', 'dohas', 'niti', 'sant-sahitya',
+      'aartis', 'abhangas', 'dohas', 'niti', 'sant-sahitya', 'charitra',
     ]),
     subcategory: z.string().optional(),
     author: z.string(),
     panth: z.enum([
       'shaiva', 'vaishnava', 'shakta', 'smarta',
-      'saura', 'ganapatya', 'common', 'varkari',
+      'saura', 'ganapatya', 'common', 'varkari', 'datta-sampradaya',
     ]),
     religion: z.enum(['hindu', 'jain', 'buddhist', 'sikh']),
     chapterNumber: z.number().optional(),

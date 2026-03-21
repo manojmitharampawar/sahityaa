@@ -1,6 +1,14 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import { LANGUAGE_NATIVE_NAMES } from '../utils/content-helpers';
+import { LANGUAGE_NATIVE_NAMES, getScriptureIndex } from '../utils/content-helpers';
+
+const allScriptures = await getScriptureIndex();
+const scriptureIndexData = JSON.stringify(allScriptures.map(s => ({
+  id: s.id,
+  firstTextId: s.firstTextId,
+  titleLatin: s.titleLatin,
+  titles: s.titles,
+})));
 
 interface LanguageInfo {
   code: string;
@@ -159,6 +167,16 @@ const base = import.meta.env.BASE_URL;
     <!-- Page Dots -->
     <div class="page-dots" id="page-dots"></div>
 
+    <!-- Ad Slot (below pagination, above chapter nav) -->
+    <div class="ad-container" aria-hidden="true">
+      <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+        data-ad-slot="XXXXXXXXXX"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+    </div>
+
     {/* Chapter navigation — always visible outside paginated content */}
     {(prevChapter || nextChapter) && (
       <nav class="chapter-nav" aria-label="Chapter navigation">
@@ -187,6 +205,22 @@ const base = import.meta.env.BASE_URL;
         )}
       </nav>
     )}
+
+    {/* Reading list navigation — shown when ?list= param present */}
+    <nav class="list-nav-bar" id="list-nav-bar" aria-label="Reading list navigation" style="display:none;">
+      <a href="#" class="list-nav-link prev" id="list-nav-prev">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Prev in list</span>
+      </a>
+      <div class="list-nav-info">
+        <span class="list-nav-name" id="list-nav-name"></span>
+        <span class="list-nav-pos" id="list-nav-pos"></span>
+      </div>
+      <a href="#" class="list-nav-link next" id="list-nav-next">
+        <span>Next in list</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </nav>
   </main>
 
   <!-- Progress bar -->
@@ -412,6 +446,19 @@ const base = import.meta.env.BASE_URL;
     transform: translateX(-50%) translateY(0);
   }
 
+  /* Ad container */
+  .ad-container {
+    max-width: 900px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ad-container ins {
+    background: transparent;
+  }
+
   /* Hide content source */
   .reading-content-source {
     display: none !important;
@@ -430,12 +477,12 @@ const base = import.meta.env.BASE_URL;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    padding: 1.2rem 1.5rem;
-    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
     background: var(--color-bg-card, var(--color-bg));
     border: 1px solid var(--color-border-light);
     border-radius: 12px;
-    max-width: 700px;
+    max-width: 900px;
     margin-left: auto;
     margin-right: auto;
   }
@@ -462,6 +509,60 @@ const base = import.meta.env.BASE_URL;
     pointer-events: none;
   }
 
+  /* Reading list navigation bar */
+  .list-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    margin-top: 0.5rem;
+    background: var(--color-accent);
+    border-radius: 12px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .list-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+
+  .list-nav-link:hover { opacity: 0.8; text-decoration: none; }
+  .list-nav-link.disabled { opacity: 0.35; pointer-events: none; }
+
+  .list-nav-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1em;
+    min-width: 0;
+  }
+
+  .list-nav-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
+  .list-nav-pos {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+  }
+
   .chapter-indicator {
     font-size: 0.85rem;
     color: var(--color-text-muted);
@@ -477,6 +578,10 @@ const base = import.meta.env.BASE_URL;
     }
   }
 </style>
+
+<script define:vars={{ scriptureIndexData }}>
+  window.__SAHITYAA_SCRIPTURE_INDEX__ = JSON.parse(scriptureIndexData);
+</script>
 
 <script>
   import { prefs, favorites, readLater, bookmarks, progress, readingLists } from '../scripts/storage';
@@ -878,5 +983,51 @@ const base = import.meta.env.BASE_URL;
     newListInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') createListBtn?.click();
     });
+
+    // ─── Reading list navigation bar ───
+    (async () => {
+      const listParam = new URLSearchParams(window.location.search).get('list');
+      if (listParam && scriptureId) {
+        const scriptureIndex = (window as any).__SAHITYAA_SCRIPTURE_INDEX__ || [];
+        const list = (await readingLists.getAll()).find((l: any) => l.id === listParam);
+        if (list && list.items.length > 0) {
+          const currentIdx = list.items.indexOf(scriptureId);
+          if (currentIdx >= 0) {
+            const navBar = document.getElementById('list-nav-bar');
+            const navName = document.getElementById('list-nav-name');
+            const navPos = document.getElementById('list-nav-pos');
+            const navPrev = document.getElementById('list-nav-prev') as HTMLAnchorElement;
+            const navNext = document.getElementById('list-nav-next') as HTMLAnchorElement;
+
+            if (navBar && navName && navPos && navPrev && navNext) {
+              const base = (import.meta as any).env?.BASE_URL || document.querySelector('base')?.href || '/sahityaa/';
+              navName.textContent = list.name;
+              navPos.textContent = `${currentIdx + 1} of ${list.items.length}`;
+
+              function getScriptureUrl(scrId: string): string {
+                const s = scriptureIndex.find((s: any) => s.id === scrId);
+                return s ? `${base}read/${s.firstTextId}/?list=${listParam}` : '#';
+              }
+
+              if (currentIdx > 0) {
+                navPrev.href = getScriptureUrl(list.items[currentIdx - 1]);
+              } else {
+                navPrev.classList.add('disabled');
+                navPrev.removeAttribute('href');
+              }
+
+              if (currentIdx < list.items.length - 1) {
+                navNext.href = getScriptureUrl(list.items[currentIdx + 1]);
+              } else {
+                navNext.classList.add('disabled');
+                navNext.removeAttribute('href');
+              }
+
+              navBar.style.display = 'flex';
+            }
+          }
+        }
+      }
+    })();
   }); // end astro:page-load
 </script>

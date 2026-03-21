@@ -78,8 +78,8 @@ p {
 
 .reading-content h2 {
   font-size: 1.4em;
-  margin-top: 2em;
-  margin-bottom: 0.8em;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
   color: var(--color-accent);
   border-bottom: 1px solid var(--color-border-light);
   padding-bottom: 0.3em;
@@ -87,20 +87,20 @@ p {
 
 .reading-content h3 {
   font-size: 1.2em;
-  margin-top: 1.5em;
-  margin-bottom: 0.6em;
+  margin-top: 1em;
+  margin-bottom: 0.4em;
 }
 
 .reading-content p {
-  margin-bottom: 1.2em;
+  margin-bottom: 0.8em;
   text-align: justify;
   hyphens: auto;
 }
 
 /* Verse styling */
 .verse {
-  margin: 1.5em 0;
-  padding: 1em 1.5em;
+  margin: 0.75em 0;
+  padding: 0.75em 1em;
   border-left: 3px solid var(--color-accent);
   background: var(--color-accent-light);
   border-radius: 0 4px 4px 0;
@@ -119,9 +119,9 @@ p {
 /* Decorative elements */
 .divider {
   text-align: center;
-  margin: 2em 0;
+  margin: 0.5em 0;
   color: var(--color-accent);
-  font-size: 1.5em;
+  font-size: 1.2em;
   opacity: 0.6;
 }
 

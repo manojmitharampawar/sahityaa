@@ -239,21 +239,24 @@ const scriptureData = JSON.stringify(scriptures.map(s => ({
       container.innerHTML = emptyMsg('No reading lists yet. Create one above to organize your reading.');
       return;
     }
-    container.innerHTML = lists.map(list =>
-      `<div class="reading-list-card">
+    container.innerHTML = lists.map(list => {
+      const firstItem = list.items.length > 0 ? getScripture(list.items[0]) : null;
+      const startUrl = firstItem ? `${base}read/${firstItem.firstTextId}/?list=${list.id}` : '';
+      return `<div class="reading-list-card">
         <div class="list-header">
           <h3 class="list-name">${list.name}</h3>
           <div class="list-actions">
+            ${startUrl ? `<a href="${startUrl}" class="btn-start-reading" title="Start reading this list">▶ Start</a>` : ''}
             <button class="btn-rename-list" data-list-id="${list.id}" title="Rename">Rename</button>
             <button class="btn-delete-list" data-list-id="${list.id}" title="Delete">Delete</button>
           </div>
         </div>
         <p class="list-count">${list.items.length} text${list.items.length !== 1 ? 's' : ''}</p>
-        <div class="list-items">${list.items.length > 0 ? list.items.map(id => {
-          return `<div class="list-item-row">${renderTextItem(id)}<button class="btn-remove-item" data-list-id="${list.id}" data-item-id="${id}" title="Remove">&times;</button></div>`;
+        <div class="list-items" data-list-id="${list.id}">${list.items.length > 0 ? list.items.map((id, idx) => {
+          return `<div class="list-item-row" draggable="true" data-list-id="${list.id}" data-item-id="${id}" data-index="${idx}"><span class="drag-handle" title="Drag to reorder">⠿</span>${renderTextItem(id)}<button class="btn-remove-item" data-list-id="${list.id}" data-item-id="${id}" title="Remove">&times;</button></div>`;
         }).join('') : '<p class="empty-state" style="padding:0.5rem;">Empty list — add texts from the reader</p>'}</div>
-      </div>`
-    ).join('');
+      </div>`;
+    }).join('');
 
     // Delete list
     container.querySelectorAll('.btn-delete-list').forEach(btn => {
@@ -284,6 +287,39 @@ const scriptureData = JSON.stringify(scriptures.map(s => ({
         const itemId = (btn as HTMLElement).dataset.itemId!;
         await readingLists.removeItem(listId, itemId);
         await renderReadingLists();
+      });
+    });
+
+    // Drag and drop reorder
+    let dragSrcEl: HTMLElement | null = null;
+    container.querySelectorAll('.list-item-row[draggable]').forEach(row => {
+      row.addEventListener('dragstart', (e) => {
+        dragSrcEl = row as HTMLElement;
+        (e as DragEvent).dataTransfer!.effectAllowed = 'move';
+        (row as HTMLElement).classList.add('dragging');
+      });
+      row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        (e as DragEvent).dataTransfer!.dropEffect = 'move';
+        (row as HTMLElement).classList.add('drag-over');
+      });
+      row.addEventListener('dragleave', () => {
+        (row as HTMLElement).classList.remove('drag-over');
+      });
+      row.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        (row as HTMLElement).classList.remove('drag-over');
+        if (!dragSrcEl || dragSrcEl === row) return;
+        const listId = (row as HTMLElement).dataset.listId!;
+        const itemId = (dragSrcEl as HTMLElement).dataset.itemId!;
+        const newIndex = parseInt((row as HTMLElement).dataset.index!, 10);
+        await readingLists.reorderItem(listId, itemId, newIndex);
+        await renderReadingLists();
+      });
+      row.addEventListener('dragend', () => {
+        (row as HTMLElement).classList.remove('dragging');
+        container!.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        dragSrcEl = null;
       });
     });
   }
@@ -625,6 +661,52 @@ const scriptureData = JSON.stringify(scriptures.map(s => ({
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    transition: background 0.15s ease;
+  }
+
+  .list-item-row[draggable] {
+    cursor: grab;
+  }
+
+  .list-item-row.dragging {
+    opacity: 0.4;
+  }
+
+  .list-item-row.drag-over {
+    background: var(--color-accent-light, rgba(0,0,0,0.05));
+    border-radius: 6px;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    padding: 0.2rem;
+    user-select: none;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+
+  .drag-handle:hover {
+    opacity: 1;
+  }
+
+  .btn-start-reading {
+    font-size: 0.75rem;
+    padding: 0.25em 0.7em;
+    border-radius: 4px;
+    background: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+
+  .btn-start-reading:hover {
+    opacity: 0.85;
+    text-decoration: none;
   }
 
   .btn-remove-item {

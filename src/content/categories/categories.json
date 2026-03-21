@@ -119,5 +119,13 @@
     "namesByLanguage": { "hi": "संत साहित्य", "mr": "संत साहित्य", "en": "Sant Literature" },
     "description": "Literature of the Bhakti movement saints of Maharashtra, including the teachings and compositions of the Varkari and other traditions.",
     "order": 15
+  },
+  {
+    "id": "charitra",
+    "name": "चरित्र",
+    "nameLatin": "Charitra",
+    "namesByLanguage": { "hi": "चरित्र", "mr": "चरित्र", "en": "Charitra" },
+    "description": "Biographies and life stories detailing the miraculous deeds and teachings of saints and divine incarnations.",
+    "order": 16
   }
 ]

@@ -11,7 +11,7 @@ interface Props {
 
 const { title, description = 'Explore Hindu Pauranik Sahitya - Sacred scriptures in multiple Indian languages', lang = 'en', ogType = 'website', jsonLd } = Astro.props;
 const base = import.meta.env.BASE_URL;
-const siteUrl = import.meta.env.SITE || 'https://example.github.io';
+const siteUrl = import.meta.env.SITE || 'https://manojmitharampawar.github.io';
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 const fullTitle = `${title} | Sahityaa`;
 ---
@@ -62,6 +62,16 @@ const fullTitle = `${title} | Sahityaa`;
         }
       })} />
     )}
+
+    <!-- Additional SEO Meta Tags -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content="Sahityaa" />
+    <meta name="keywords" content="Hindu scriptures, Sanskrit texts, Bhagavad Gita, Upanishads, Vedas, Puranas, Indian literature, sacred texts, dharma, spiritual texts" />
+    <meta property="og:image" content={`${siteUrl}${base}og-image.png`} />
+    <meta name="twitter:image" content={`${siteUrl}${base}og-image.png`} />
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 
     <!-- Google Fonts - Noto Serif for Indic scripts + Noto Sans for UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
